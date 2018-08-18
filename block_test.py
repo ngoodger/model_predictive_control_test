@@ -97,13 +97,12 @@ try:
         observation = a.step(0., 0.)
         s[:, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
     x = s
-    out = cnn_model.forward(x)
-    print(out.shape)
-    a.show(out)
+    out = cnn_model.forward(x).reshape(GRID_SIZE, 4 * GRID_SIZE)
+    a.show(np.rint(out[:, 0:GRID_SIZE]).astype(np.int64))
     for i in range(100):
         time.sleep(0.1)
         #observation = a.step(0., 0.)
-        a.show(a.grid)
+        #a.show(a.grid)
 finally:
     curses.echo()
     curses.nocbreak()
