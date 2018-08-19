@@ -6,20 +6,21 @@ import torch.optim as optim
 
 class Model():
     def __init__(self):
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCEWithLogitsLoss()
         self.cnn_model = ConvNet()
         self.iteration = 0
         self.optimizer = optim.Adam(self.cnn_model.parameters(),
-                                    lr=0.001)
+                                    lr=1e-3)
         self.running_loss = []
         print(self.cnn_model)
 
-    def train(self, s0, s1):
+    def train(self, s0, s1, force):
         x = torch.from_numpy(s0)
         y = torch.from_numpy(s1)
+        x_force = torch.from_numpy(force)
         self.optimizer.zero_grad()
-        out = self.cnn_model.forward(x)
-        loss = self.criterion(out.reshape([1, 32 * 128]),
+        logits, out = self.cnn_model.forward(x, x_force)
+        loss = self.criterion(logits.reshape([1, 32 * 128]),
                               y.reshape([1, 32 * 128]))
         loss.backward()
         self.running_loss += [loss.data[0]]
@@ -44,8 +45,10 @@ class ConvNet(nn.Module):
             nn.Conv2d(8, 16, kernel_size=6, stride=2, padding=2),
             nn.BatchNorm2d(16),
             nn.ReLU())
-        self.layer3 = nn.Linear(16*16*16, 32)
-        self.layer4 = nn.Linear(32, 16*16*16)
+        self.layer3 = nn.Sequential(nn.Linear(16*16*16, 64),
+            nn.ReLU())
+        self.layer4 = nn.Sequential(nn.Linear(128, 16*16*16),
+            nn.ReLU())
         self.layer5 = nn.Sequential(
             nn.ConvTranspose2d(16, 8, kernel_size=6, stride=2, padding=2,
                                output_padding=0),
@@ -54,10 +57,12 @@ class ConvNet(nn.Module):
         self.layer6 = nn.Sequential(
             nn.ConvTranspose2d(8, 1, kernel_size=3, stride=2, padding=1,
                                output_padding=1),
-            nn.BatchNorm2d(1),
+            nn.BatchNorm2d(1)
+            )
+        self.layer7 = nn.Sequential(
             nn.Sigmoid())
 
-    def forward(self, x):
+    def forward(self, x, x_force):
         # print(x.shape)
         out = self.layer1(x)
         # print(out.shape)
@@ -65,11 +70,14 @@ class ConvNet(nn.Module):
         # print(out.shape)
         out = out.reshape(out.size(0), -1)
         out = self.layer3(out)
+        # Concatonate block force.
+        out_force = torch.cat((out, x_force), dim=1)
         # print(out.shape)
-        out = self.layer4(out)
+        out = self.layer4(out_force)
         out = out.reshape(1, 16, 8, 32)
         out = self.layer5(out)
         # print(out.shape)
-        out = self.layer6(out)
+        logits = self.layer6(out)
+        out = self.layer7(logits)
         # print(out.shape)
-        return out
+        return (logits, out)
