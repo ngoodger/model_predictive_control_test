@@ -20,8 +20,8 @@ class Model():
         x_force = torch.from_numpy(force)
         self.optimizer.zero_grad()
         logits, out = self.cnn_model.forward(x, x_force)
-        loss = self.criterion(logits.reshape([1, 32 * 128]),
-                              y.reshape([1, 32 * 128]))
+        loss = self.criterion(logits.reshape([logits.size(0), 32 * 128]),
+                              y.reshape([y.size(0), 32 * 128]))
         loss.backward()
         self.running_loss += [loss.data[0]]
         if len(self.running_loss) >= 1000:
@@ -74,7 +74,7 @@ class ConvNet(nn.Module):
         out_force = torch.cat((out, x_force), dim=1)
         # print(out.shape)
         out = self.layer4(out_force)
-        out = out.reshape(1, 16, 8, 32)
+        out = out.reshape(out.size(0), 16, 8, 32)
         out = self.layer5(out)
         # print(out.shape)
         logits = self.layer6(out)

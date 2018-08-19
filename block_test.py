@@ -11,6 +11,7 @@ BLOCK_MASS = 0.1
 FRICTION = 0.01
 TIMESTEP = 1e-3
 FORCE_SCALE = 100000.
+BATCH_SIZE = 32
 
 
 class block_test():
@@ -95,39 +96,48 @@ try:
     a = block_test(use_curses=True)
     my_model = model.Model()
     # State is 4 Grids to satisfy markov property
-    s0 = np.zeros([1, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
-    s1 = np.zeros([1, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
+    s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
+    s1 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
+    force = np.zeros([BATCH_SIZE, 64], dtype=np.float32)
     # Run first four steps to get initial observation
+    batch_idx = 0
+    batch_count = 0
     for k in range(1000000000):
         a.reset()
         for i in range(4):
             observation = a.step(0., 0.)
-            s0[:, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
-        force = np.array([FORCE_SCALE * (random() - 0.5), FORCE_SCALE * (random() - 0.5)], dtype=np.float32)
+            s0[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
+        force[batch_idx, :] = np.tile(np.array([FORCE_SCALE * (random() - 0.5),
+                                        FORCE_SCALE * (random() - 0.5)], dtype=np.float32), 32)
         for i in range(4):
-            observation = a.step(force[0], force[1])
-            s1[:, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
+            observation = a.step(force[batch_idx, 0], force[batch_idx, 1])
+            s1[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
         #print("diff: {}".format(np.array_equal(s0, s1)))
-        # Train with normalized inputs
-        y1 = my_model.train(s0 - 0.5, s1, np.tile(force, 32).reshape([1, 64]) / FORCE_SCALE)
-        if k % 100 == 0:
-            # print(s0.shape)
-            for i in range(4):
-                #time.sleep(0.1)
-                s0_frame = s0[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
-                #a.show(np.rint(s0_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
-            for i in range(4):
-                time.sleep(0.1)
-                s1_frame = s1[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
-                a.show(2 * np.rint(s1_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
-            for i in range(4):
-                #time.sleep(0.1)
-                s0_frame = s0[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
-                #a.show(3 * np.rint(s0_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
-            for i in range(4):
-                time.sleep(0.1)
-                y1_frame = y1[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
-                a.show(4 * np.rint(y1_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+        if batch_idx < 31:
+            batch_idx += 1
+        else:
+            # Train with normalized inputs
+            y1 = my_model.train(s0 - 0.5, s1, force / FORCE_SCALE)
+            batch_idx = 0
+            batch_count += 1
+            if batch_count % 30 == 0:
+                # print(s0.shape)
+                for i in range(4):
+                    #time.sleep(0.1)
+                    s0_frame = s0[0, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                    #a.show(np.rint(s0_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+                for i in range(4):
+                    time.sleep(0.1)
+                    s1_frame = s1[0, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                    a.show(2 * np.rint(s1_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+                for i in range(4):
+                    #time.sleep(0.1)
+                    s0_frame = s0[0, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                    #a.show(3 * np.rint(s0_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+                for i in range(4):
+                    time.sleep(0.1)
+                    y1_frame = y1[0, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                    a.show(4 * np.rint(y1_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
     """
     for i in range(1000):
         my_model.train(s0, s1)
