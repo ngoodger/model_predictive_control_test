@@ -1,5 +1,36 @@
 from torch import nn
 import torch
+import numpy as np
+import torch.optim as optim
+
+
+class Model():
+    def __init__(self):
+        self.criterion = nn.BCELoss()
+        self.cnn_model = ConvNet()
+        self.iteration = 0
+        self.optimizer = optim.Adam(self.cnn_model.parameters(),
+                                    lr=0.001)
+        self.running_loss = []
+        print(self.cnn_model)
+
+    def train(self, s0, s1):
+        x = torch.from_numpy(s0)
+        y = torch.from_numpy(s1)
+        self.optimizer.zero_grad()
+        out = self.cnn_model.forward(x)
+        loss = self.criterion(out.reshape([1, 32 * 128]),
+                              y.reshape([1, 32 * 128]))
+        loss.backward()
+        self.running_loss += [loss.data[0]]
+        if len(self.running_loss) >= 1000:
+            self.running_loss.pop(0)
+        if (self.iteration % 100) == 0:
+            print('loss: {}'.format(np.mean(self.running_loss)))
+        self.optimizer.step()
+        y1 = out.data.numpy()
+        self.iteration += 1
+        return y1
 
 
 class ConvNet(nn.Module):
@@ -26,21 +57,19 @@ class ConvNet(nn.Module):
             nn.BatchNorm2d(1),
             nn.Sigmoid())
 
-    def forward(self, x_np):
-        x = torch.from_numpy(x_np)
-        print(x.shape)
+    def forward(self, x):
+        # print(x.shape)
         out = self.layer1(x)
-        print(out.shape)
+        # print(out.shape)
         out = self.layer2(out)
-        print(out.shape)
+        # print(out.shape)
         out = out.reshape(out.size(0), -1)
         out = self.layer3(out)
-        print(out.shape)
+        # print(out.shape)
         out = self.layer4(out)
         out = out.reshape(1, 16, 8, 32)
         out = self.layer5(out)
-        print(out.shape)
+        # print(out.shape)
         out = self.layer6(out)
-        print(out.shape)
-        out_np = out.data.numpy()
-        return out_np
+        # print(out.shape)
+        return out

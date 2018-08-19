@@ -4,17 +4,26 @@ import curses
 import time
 import model
 
-
 GRID_SIZE = 32
 BLOCK_SIZE = 4
 BLOCK_SIZE_HALF = int(round(BLOCK_SIZE / 2))
 BLOCK_MASS = 0.1
 FRICTION = 0.01
-TIMESTEP = 1e-3
+TIMESTEP = 1e-3 
+
 
 class block_test():
-    def __init__(self):
+    def __init__(self, use_curses=True):
         self._grid = np.zeros([GRID_SIZE, GRID_SIZE], dtype=np.int64)
+        self.reset()
+        if curses:
+            self.stdscr = curses.initscr()
+            curses.noecho()
+            curses.cbreak()
+            self._render()
+
+    def reset(self):
+        self._grid[:, :] = 0
         self.x = (BLOCK_SIZE / 2) + (random() * (GRID_SIZE - BLOCK_SIZE))
         self.y = (BLOCK_SIZE / 2) + (random() * (GRID_SIZE - BLOCK_SIZE))
         self.pixel_x = 0
@@ -23,11 +32,6 @@ class block_test():
         self.pixel_y_last = 0
         self.vx = 1000. * random()
         self.vy = 1000. * random()
-        self._test_grid = "hello"
-        self.stdscr = curses.initscr()
-        curses.noecho()
-        curses.cbreak()
-        self._render()
 
     @property
     def grid(self):
@@ -87,22 +91,52 @@ class block_test():
 
 
 try:
-    cnn_model = model.ConvNet()
-    print(cnn_model)
-    a = block_test()
+    a = block_test(use_curses=True)
+    my_model = model.Model()
     # State is 4 Grids to satisfy markov property
-    s = np.zeros([1, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
+    s0 = np.zeros([1, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
+    s1 = np.zeros([1, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
     # Run first four steps to get initial observation
-    for i in range(4):
-        observation = a.step(0., 0.)
-        s[:, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
-    x = s
-    out = cnn_model.forward(x).reshape(GRID_SIZE, 4 * GRID_SIZE)
-    a.show(np.rint(out[:, 0:GRID_SIZE]).astype(np.int64))
-    for i in range(100):
-        time.sleep(0.1)
-        #observation = a.step(0., 0.)
+    for k in range(1000000000):
+        a.reset()
+        for i in range(4):
+            observation = a.step(0., 0.)
+            s0[:, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
+        for i in range(4):
+            observation = a.step(0., 0.)
+            s1[:, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
+        #print("diff: {}".format(np.array_equal(s0, s1)))
+        y1 = my_model.train(s0, s1)
+        if k % 100 == 0:
+            # print(s0.shape)
+            for i in range(4):
+                time.sleep(0.1)
+                s0_frame = s0[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                a.show(np.rint(s0_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+            for i in range(4):
+                time.sleep(0.1)
+                s1_frame = s1[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                a.show(np.rint(s1_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+            for i in range(4):
+                time.sleep(0.1)
+                s0_frame = s0[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                a.show(np.rint(s0_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+            for i in range(4):
+                time.sleep(0.1)
+                y1_frame = y1[:, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
+                a.show(np.rint(y1_frame.reshape([GRID_SIZE, GRID_SIZE])).astype(np.int64))
+    """
+    for i in range(1000):
+        my_model.train(s0, s1)
+        s1 = s0
+        for j in range(4):
+            time.sleep(0.01)
+            observation = a.step(0 * (random() - 0.5), 0 * (random() - 0.5))
+            s0[:, :, :, (j * GRID_SIZE): ((j * GRID_SIZE) + GRID_SIZE)] = observation
         #a.show(a.grid)
+    x = s
+    """
+    #a.show(np.rint(out[:, 0:GRID_SIZE]).astype(np.int64))
 finally:
     curses.echo()
     curses.nocbreak()
