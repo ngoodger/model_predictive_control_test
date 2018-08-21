@@ -2,6 +2,7 @@ from torch import nn
 import torch
 import numpy as np
 import torch.optim as optim
+import time
 
 
 class Model():
@@ -45,39 +46,40 @@ class ConvNet(nn.Module):
             nn.Conv2d(8, 16, kernel_size=6, stride=2, padding=2),
             nn.BatchNorm2d(16),
             nn.ReLU())
-        self.layer3 = nn.Sequential(nn.Linear(16*16*16, 64),
-            nn.ReLU())
-        self.layer4 = nn.Sequential(nn.Linear(128, 16*16*16),
-            nn.ReLU())
-        self.layer5 = nn.Sequential(
+        self.layer3 = nn.Sequential(
             nn.ConvTranspose2d(16, 8, kernel_size=6, stride=2, padding=2,
                                output_padding=0),
             nn.BatchNorm2d(8),
             nn.ReLU())
-        self.layer6 = nn.Sequential(
+        self.layer4 = nn.Sequential(
             nn.ConvTranspose2d(8, 1, kernel_size=3, stride=2, padding=1,
                                output_padding=1),
             nn.BatchNorm2d(1)
             )
-        self.layer7 = nn.Sequential(
+        self.layer_force = nn.Sequential(
+            nn.Linear(2, 4096),
+            nn.ReLU())
+        self.layer5 = nn.Sequential(
             nn.Sigmoid())
 
     def forward(self, x, x_force):
+        out_force = self.layer_force(x_force)
         # print(x.shape)
-        out = self.layer1(x)
+        out1 = self.layer1(x)
         # print(out.shape)
-        out = self.layer2(out)
+        #start_time = time.time()
+        out2 = self.layer2(out1)
+        #print("--- %s seconds ---" % (time.time() - start_time))
         # print(out.shape)
-        out = out.reshape(out.size(0), -1)
-        out = self.layer3(out)
+        out_2_flat = out2.view(out2.size(0), -1)
         # Concatonate block force.
-        out_force = torch.cat((out, x_force), dim=1)
+        # out_combined = torch.cat((out_2_flat, out_force), dim=1)
+        out_combined = torch.add(out_2_flat, out_force)
         # print(out.shape)
-        out = self.layer4(out_force)
-        out = out.reshape(out.size(0), 16, 8, 32)
-        out = self.layer5(out)
+        out = out_combined.view(out_combined.size(0), 16, 8, 32)
+        out = self.layer3(out)
         # print(out.shape)
-        logits = self.layer6(out)
-        out = self.layer7(logits)
+        logits = self.layer4(out)
+        out = self.layer5(logits)
         # print(out.shape)
         return (logits, out)

@@ -4,14 +4,14 @@ import curses
 import time
 import model
 
-GRID_SIZE = 32
+GRID_SIZE = 32 
 BLOCK_SIZE = 4
 BLOCK_SIZE_HALF = int(round(BLOCK_SIZE / 2))
 BLOCK_MASS = 0.1
 FRICTION = 0.01
 TIMESTEP = 1e-3
 FORCE_SCALE = 100000.
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 
 
 class block_test():
@@ -98,7 +98,7 @@ try:
     # State is 4 Grids to satisfy markov property
     s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
     s1 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
-    force = np.zeros([BATCH_SIZE, 64], dtype=np.float32)
+    force = np.zeros([BATCH_SIZE, 2], dtype=np.float32)
     # Run first four steps to get initial observation
     batch_idx = 0
     batch_count = 0
@@ -108,7 +108,7 @@ try:
             observation = a.step(0., 0.)
             s0[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
         force[batch_idx, :] = np.tile(np.array([FORCE_SCALE * (random() - 0.5),
-                                        FORCE_SCALE * (random() - 0.5)], dtype=np.float32), 32)
+                                        FORCE_SCALE * (random() - 0.5)], dtype=np.float32), 1)
         for i in range(4):
             observation = a.step(force[batch_idx, 0], force[batch_idx, 1])
             s1[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
