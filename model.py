@@ -5,6 +5,11 @@ import torch.optim as optim
 import time
 
 
+class Hyperparameters():
+    def __init__(self):
+        self.learning_rate = 1e-3
+        self.fully_connected_middle_layers = 0
+
 class Model():
     def __init__(self):
         self.criterion = nn.BCEWithLogitsLoss()
@@ -67,19 +72,19 @@ class ConvNet(nn.Module):
         # print(x.shape)
         out1 = self.layer1(x)
         # print(out.shape)
-        #start_time = time.time()
+        # start_time = time.time()
         out2 = self.layer2(out1)
-        #print("--- %s seconds ---" % (time.time() - start_time))
+        # print("--- %s seconds ---" % (time.time() - start_time))
         # print(out.shape)
-        out_2_flat = out2.view(out2.size(0), -1)
+        out2_flat = out2.view(out2.size(0), -1)
         # Concatonate block force.
         # out_combined = torch.cat((out_2_flat, out_force), dim=1)
-        out_combined = torch.add(out_2_flat, out_force)
+        out_combined = torch.add(out2_flat, out_force)
         # print(out.shape)
-        out = out_combined.view(out_combined.size(0), 16, 8, 32)
-        out = self.layer3(out)
+        out_combined_image = out_combined.view(out_combined.size(0), 16, 8, 32)
+        out3 = torch.add(self.layer3(out_combined_image), out1)
         # print(out.shape)
-        logits = self.layer4(out)
-        out = self.layer5(logits)
+        logits = torch.add(self.layer4(out3), x)
+        out_5 = self.layer5(logits)
         # print(out.shape)
-        return (logits, out)
+        return (logits, out_5)
