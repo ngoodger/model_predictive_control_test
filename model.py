@@ -4,6 +4,8 @@ import numpy as np
 import torch.optim as optim
 import time
 
+LOSS_MEAN_WINDOW = 1000
+
 
 class Hyperparameters():
     def __init__(self):
@@ -20,21 +22,19 @@ class Model():
         self.running_loss = []
         print(self.cnn_model)
 
-    def train(self, s0, s1, force):
-        x = torch.from_numpy(s0)
-        y = torch.from_numpy(s1)
-        x_force = torch.from_numpy(force)
+    def train(self, x, y, x_force):
         self.optimizer.zero_grad()
         logits, out = self.cnn_model.forward(x, x_force)
         loss = self.criterion(logits.reshape([logits.size(0), 32 * 128]),
                               y.reshape([y.size(0), 32 * 128]))
         loss.backward()
         self.running_loss += [loss.data[0]]
-        if len(self.running_loss) >= 1000:
+        if len(self.running_loss) >= LOSS_MEAN_WINDOW:
             self.running_loss.pop(0)
         if (self.iteration % 100) == 0:
-            print('loss: {}'.format(np.mean(self.running_loss)))
+            print('loss: {}'.format(sum(self.running_loss) / LOSS_MEAN_WINDOW))
         self.optimizer.step()
+        del loss
         y1 = out.data.numpy()
         self.iteration += 1
         return y1
@@ -69,7 +69,7 @@ class ConvNet(nn.Module):
 
     def forward(self, x, x_force):
         out_force = self.layer_force(x_force)
-        # print(x.shape)
+        #print(x.shape)
         out1 = self.layer1(x)
         # print(out.shape)
         # start_time = time.time()

@@ -93,7 +93,7 @@ class BlockSys():
 
 if __name__ == "__main__":
     try:
-        a = block_sys(use_curses=True)
+        a = BlockSys(use_curses=True)
         my_model = model.Model()
         # State is 4 Grids to satisfy markov property
         s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
