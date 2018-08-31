@@ -1,10 +1,13 @@
 import numpy as np
 from random import random
-import curses
 import time
 import model
+import os
+if os.name == "posix":
+    import curses
 
-GRID_SIZE = 32 
+
+GRID_SIZE = 32
 BLOCK_SIZE = 4
 BLOCK_SIZE_HALF = int(round(BLOCK_SIZE / 2))
 BLOCK_MASS = 0.1
@@ -18,7 +21,9 @@ class BlockSys():
     def __init__(self, use_curses=True):
         self._grid = np.zeros([GRID_SIZE, GRID_SIZE], dtype=np.int64)
         self.reset()
-        if curses:
+        if use_curses and os.name == "nt":
+            raise ValueError('Curses not supported on Windows.')
+        if use_curses:
             self.stdscr = curses.initscr()
             curses.noecho()
             curses.cbreak()
@@ -51,15 +56,15 @@ class BlockSys():
         pixel_x_bounded = 0 if pixel_x_corner < 0 else pixel_x_corner
         pixel_y_bounded = 0 if pixel_y_corner < 0 else pixel_y_corner
         self.pixel_x = ((GRID_SIZE - BLOCK_SIZE) if pixel_x_bounded >
-                   (GRID_SIZE - BLOCK_SIZE) else pixel_x_bounded)
+                        (GRID_SIZE - BLOCK_SIZE) else pixel_x_bounded)
         self.pixel_y = ((GRID_SIZE - BLOCK_SIZE) if pixel_y_bounded >
-                   (GRID_SIZE - BLOCK_SIZE) else pixel_y_bounded)
+                        (GRID_SIZE - BLOCK_SIZE) else pixel_y_bounded)
         # Zeroise last position
         self._grid[self.pixel_x_last: self.pixel_x_last + BLOCK_SIZE,
-                  self.pixel_y_last: self.pixel_y_last + BLOCK_SIZE] = 0
+                   self.pixel_y_last: self.pixel_y_last + BLOCK_SIZE] = 0
         # Add block
         self._grid[self.pixel_x: self.pixel_x + BLOCK_SIZE,
-                  self.pixel_y: self.pixel_y + BLOCK_SIZE] = 1
+                   self.pixel_y: self.pixel_y + BLOCK_SIZE] = 1
 
     def show(self, grid):
         """
@@ -91,13 +96,16 @@ class BlockSys():
         self._render()
         return self._grid
 
+
 if __name__ == "__main__":
     try:
         a = BlockSys(use_curses=True)
         my_model = model.Model()
         # State is 4 Grids to satisfy markov property
-        s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
-        s1 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
+        s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE],
+                      dtype=np.float32)
+        s1 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE],
+                      dtype=np.float32)
         force = np.zeros([BATCH_SIZE, 2], dtype=np.float32)
         # Run first four steps to get initial observation
         batch_idx = 0
@@ -106,7 +114,8 @@ if __name__ == "__main__":
             a.reset()
             for i in range(4):
                 observation = a.step(0., 0.)
-                s0[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
+                s0[batch_idx, :, :,
+                   (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
             force[batch_idx, :] = np.tile(np.array([FORCE_SCALE * (random() - 0.5),
                                             FORCE_SCALE * (random() - 0.5)], dtype=np.float32), 1)
             for i in range(4):
@@ -151,6 +160,7 @@ if __name__ == "__main__":
         """
         #a.show(np.rint(out[:, 0:GRID_SIZE]).astype(np.int64))
     finally:
-        curses.echo()
-        curses.nocbreak()
-        curses.endwin()
+        if os.name == "posix":
+            curses.echo()
+            curses.nocbreak()
+            curses.endwin()

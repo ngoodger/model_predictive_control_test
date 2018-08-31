@@ -1,8 +1,7 @@
 import block_sys as bs
 import numpy as np
 from random import random
-import time
-import curses
+# import curses
 import pickle
 import torch.utils.data
 
@@ -66,6 +65,7 @@ try:
     pickle.dump(force, open("force.p", "wb"))
     pickle.dump(s1, open("s1.p", "wb"))
 finally:
-    curses.echo()
-    curses.nocbreak()
-    curses.endwin()
+    pass
+#    curses.echo()
+#    curses.nocbreak()
+#    curses.endwin()
