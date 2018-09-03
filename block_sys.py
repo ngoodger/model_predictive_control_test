@@ -14,7 +14,7 @@ TIMESTEP = 1e-3
 FORCE_SCALE = 100000.
 BATCH_SIZE = 64
 DEFAULT_RENDER_PORT = 8123
-IMAGE_PATH = "frames"
+IMAGE_PREFIX = "frame"
 
 
 class BlockSys():
@@ -136,4 +136,4 @@ def render(grid):
     grid255 = 255. * grid
     grid_uint = np.rint(grid255).astype('uint8')
     im = Image.fromarray(grid_uint, mode="L")
-    im.save(os.path.join(IMAGE_PATH, "{}.jpeg".format(str(datetime.now()))))
+    im.save(IMAGE_PREFIX + "{}.jpeg".format(str(datetime.now())))
