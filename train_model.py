@@ -3,8 +3,8 @@ import torch
 from torch.utils.data import DataLoader
 import block_sys
 import block_sys as bs
-import time
 import model
+import time
 BATCH_SIZE = 32
 EPOCHS = 5
 
@@ -25,6 +25,7 @@ dataloader = DataLoader(samples_dataset, batch_size=BATCH_SIZE,
                         shuffle=False, num_workers=4) 
 my_model = model.Model().to(device)
 iteration = 0
+start = time.clock()
 for epoch_idx in range(EPOCHS):
     print("epoch: {}".format(epoch_idx))
     for batch_idx, data in enumerate(dataloader):
@@ -34,6 +35,10 @@ for epoch_idx in range(EPOCHS):
         y1 = my_model.train(s0_batch - 0.5, s1_batch,
                             force_batch / block_sys.FORCE_SCALE)
         if iteration % 100 == 0:
+            elapsed = time.clock()
+            elapsed = elapsed - start
+            print ("Time:" + str(elapsed))
+            start = time.clock()
             for i in range(4):
                 time.sleep(0.1)
                 s0_frame = s0_batch[0, :, :, (i * bs.GRID_SIZE):
