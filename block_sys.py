@@ -1,10 +1,7 @@
 import numpy as np
 from random import random
-import time
-import model
-import os
-if os.name == "posix":
-    import curses
+from PIL import Image
+from datetime import datetime
 
 
 GRID_SIZE = 32
@@ -15,22 +12,17 @@ FRICTION = 0.01
 TIMESTEP = 1e-3
 FORCE_SCALE = 100000.
 BATCH_SIZE = 64
+DEFAULT_RENDER_PORT = 8123
+IMAGE_PATH = "./frames/"
 
 
 class BlockSys():
-    def __init__(self, use_curses=True):
-        self._grid = np.zeros([GRID_SIZE, GRID_SIZE], dtype=np.int64)
+    def __init__(self):
+        self._grid = np.zeros([GRID_SIZE, GRID_SIZE], dtype=np.float32)
         self.reset()
-        if use_curses and os.name == "nt":
-            raise ValueError('Curses not supported on Windows.')
-        if use_curses:
-            self.stdscr = curses.initscr()
-            curses.noecho()
-            curses.cbreak()
-            self._render()
 
     def reset(self):
-        self._grid[:, :] = 0
+        self._grid[:, :] = 0.
         self.x = (BLOCK_SIZE / 2) + (random() * (GRID_SIZE - BLOCK_SIZE))
         self.y = (BLOCK_SIZE / 2) + (random() * (GRID_SIZE - BLOCK_SIZE))
         self.pixel_x = 0
@@ -44,9 +36,9 @@ class BlockSys():
     def grid(self):
         return self._grid
 
-    def _render(self):
+    def _rasterize(self):
         """
-        Render block on grid
+        Rasterize block on grid
         """
         self.pixel_x_last = self.pixel_x
         self.pixel_y_last = self.pixel_y
@@ -61,21 +53,11 @@ class BlockSys():
                         (GRID_SIZE - BLOCK_SIZE) else pixel_y_bounded)
         # Zeroise last position
         self._grid[self.pixel_x_last: self.pixel_x_last + BLOCK_SIZE,
-                   self.pixel_y_last: self.pixel_y_last + BLOCK_SIZE] = 0
+                   self.pixel_y_last: self.pixel_y_last + BLOCK_SIZE] = 0.
         # Add block
         self._grid[self.pixel_x: self.pixel_x + BLOCK_SIZE,
-                   self.pixel_y: self.pixel_y + BLOCK_SIZE] = 1
+                   self.pixel_y: self.pixel_y + BLOCK_SIZE] = 1.
 
-    def show(self, grid):
-        """
-        Print out the grid
-        """
-        for i in range(GRID_SIZE):
-            grid_line = ""
-            for j in range(GRID_SIZE):
-                grid_line += str(grid[i, j]) + " "
-            self.stdscr.addstr(i, 0, grid_line)
-        self.stdscr.refresh()
 
     def step(self, fx, fy):
         """
@@ -93,17 +75,16 @@ class BlockSys():
                 (GRID_SIZE - BLOCK_SIZE_HALF)):
             self.vy = - self.vy
         self.y += self.vy * TIMESTEP
-        self._render()
+        self._rasterize()
         return self._grid
 
-
+"""
 if __name__ == "__main__":
     try:
         a = BlockSys(use_curses=True)
         my_model = model.Model()
         # State is 4 Grids to satisfy markov property
-        s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE],
-                      dtype=np.float32)
+        s0 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE], dtype=np.float32)
         s1 = np.zeros([BATCH_SIZE, 1, GRID_SIZE, 4 * GRID_SIZE],
                       dtype=np.float32)
         force = np.zeros([BATCH_SIZE, 2], dtype=np.float32)
@@ -115,13 +96,14 @@ if __name__ == "__main__":
             for i in range(4):
                 observation = a.step(0., 0.)
                 s0[batch_idx, :, :,
-                   (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
+                   (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = obsv
             force[batch_idx, :] = np.tile(np.array([FORCE_SCALE * (random() - 0.5),
-                                            FORCE_SCALE * (random() - 0.5)], dtype=np.float32), 1)
+                                            FORCE_SCALE * (random() - 0.5)],
+                                            dtype=np.float32), 1)
             for i in range(4):
-                observation = a.step(force[batch_idx, 0], force[batch_idx, 1])
-                s1[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = observation
-            #print("diff: {}".format(np.array_equal(s0, s1)))
+                obsv = a.step(force[batch_idx, 0], force[batch_idx, 1])
+                s1[batch_idx, :, :, (i * GRID_SIZE): ((i * GRID_SIZE) + GRID_SIZE)] = obsv
+            # print("diff: {}".format(np.array_equal(s0, s1)))
             if batch_idx < 31:
                 batch_idx += 1
             else:
@@ -147,20 +129,10 @@ if __name__ == "__main__":
                         time.sleep(0.1)
                         y1_frame = y1[0, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
                         a.show(4 * np.rint(y1_frame).astype(np.int64))
-        """
-        for i in range(1000):
-            my_model.train(s0, s1)
-            s1 = s0
-            for j in range(4):
-                time.sleep(0.01)
-                observation = a.step(0 * (random() - 0.5), 0 * (random() - 0.5))
-                s0[:, :, :, (j * GRID_SIZE): ((j * GRID_SIZE) + GRID_SIZE)] = observation
-            #a.show(a.grid)
-        x = s
-        """
-        #a.show(np.rint(out[:, 0:GRID_SIZE]).astype(np.int64))
-    finally:
-        if os.name == "posix":
-            curses.echo()
-            curses.nocbreak()
-            curses.endwin()
+"""
+def render(grid):
+    assert(grid.shape == (GRID_SIZE, GRID_SIZE))
+    grid255 = 255. * grid
+    grid_uint = np.rint(grid255).astype('uint8')
+    im = Image.fromarray(grid_uint, mode="L")
+    im.save(IMAGE_PATH + "{}.jpeg".format(str(datetime.now())))

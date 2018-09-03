@@ -35,9 +35,8 @@ class Model():
             print('loss: {}'.format(sum(self.running_loss) / LOSS_MEAN_WINDOW))
         self.optimizer.step()
         del loss
-        y1 = out.data.numpy()
         self.iteration += 1
-        return y1
+        return out.data
 
 
 class ConvNet(nn.Module):
