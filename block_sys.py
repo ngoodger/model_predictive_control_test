@@ -14,7 +14,7 @@ TIMESTEP = 1e-3
 FORCE_SCALE = 100000.
 BATCH_SIZE = 64
 DEFAULT_RENDER_PORT = 8123
-IMAGE_PATH = "frames/"
+IMAGE_PATH = "frames"
 
 
 class BlockSys():
