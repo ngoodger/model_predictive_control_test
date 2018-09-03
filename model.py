@@ -12,8 +12,9 @@ class Hyperparameters():
         self.learning_rate = 1e-3
         self.fully_connected_middle_layers = 0
 
-class Model():
+class Model(nn.Module):
     def __init__(self):
+        super(Model, self).__init__()
         self.criterion = nn.BCEWithLogitsLoss()
         self.cnn_model = ConvNet()
         self.iteration = 0
