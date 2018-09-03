@@ -22,8 +22,7 @@ samples_dataset = torch.utils.data.TensorDataset(s0_tensor,
                                                  force_tensor, s1_tensor)
 
 dataloader = DataLoader(samples_dataset, batch_size=BATCH_SIZE,
-                        shuffle=False, num_workers=4)
-
+                        shuffle=False, num_workers=4) 
 my_model = model.Model().to(device)
 iteration = 0
 for epoch_idx in range(EPOCHS):
@@ -38,12 +37,12 @@ for epoch_idx in range(EPOCHS):
             for i in range(4):
                 time.sleep(0.1)
                 s0_frame = s0_batch[0, :, :, (i * bs.GRID_SIZE):
-                              (i * bs.GRID_SIZE + bs.GRID_SIZE)].numpy()
+                              (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
                 block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
 
             for i in range(4):
                 time.sleep(0.1)
                 y1_frame = y1[0, :, :, (i * bs.GRID_SIZE):
-                              (i * bs.GRID_SIZE + bs.GRID_SIZE)].numpy()
+                              (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
                 block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
         iteration += 1
