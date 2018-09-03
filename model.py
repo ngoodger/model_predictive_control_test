@@ -1,10 +1,10 @@
 from torch import nn
 import torch
-import numpy as np
 import torch.optim as optim
-import time
+import numpy as np
 
 LOSS_MEAN_WINDOW = 1000
+PRINT_LOSS_MEAN_ITERATION = 100
 
 
 class Hyperparameters():
@@ -12,15 +12,16 @@ class Hyperparameters():
         self.learning_rate = 1e-3
         self.fully_connected_middle_layers = 0
 
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
+
+class Trainer():
+    def __init__(self, cnn_model):
         self.criterion = nn.BCEWithLogitsLoss()
-        self.cnn_model = ConvNet()
         self.iteration = 0
+        self.cnn_model = cnn_model
         self.optimizer = optim.Adam(self.cnn_model.parameters(),
                                     lr=1e-3)
-        self.running_loss = []
+        self.running_loss = np.ones(LOSS_MEAN_WINDOW)
+        self.running_loss_idx = 0
         print(self.cnn_model)
 
     def train(self, x, y, x_force):
@@ -29,10 +30,13 @@ class Model(nn.Module):
         loss = self.criterion(logits.reshape([logits.size(0), 32 * 128]),
                               y.reshape([y.size(0), 32 * 128]))
         loss.backward()
-        self.running_loss += [loss.data[0]]
-        if len(self.running_loss) >= LOSS_MEAN_WINDOW:
-            self.running_loss.pop(0)
-        if (self.iteration % 100) == 0:
+        self.running_loss[self.running_loss_idx] = loss.data[0]
+        if self.running_loss_idx >= LOSS_MEAN_WINDOW - 1:
+            self.running_loss_idx = 0
+        else:
+            self.running_loss_idx += 1
+
+        if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0:
             print('loss: {}'.format(sum(self.running_loss) / LOSS_MEAN_WINDOW))
         self.optimizer.step()
         del loss
