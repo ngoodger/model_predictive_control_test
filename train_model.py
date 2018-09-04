@@ -1,12 +1,55 @@
 import pickle
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 import block_sys
 import block_sys as bs
 import model
+import random
 import time
-BATCH_SIZE = 32
+import numpy as np
+BATCH_SIZE = 16
 EPOCHS = 5
+TRAINING_DATA_SIZE = 1000
+IMAGE_DEPTH = 1
+
+class BlockDataSet(Dataset):
+    def __init__(self):
+        #super(BlockDataSet, self).__init__()
+        self.my_block_sys = bs.BlockSys()
+        self.s0 = np.zeros([IMAGE_DEPTH, bs.GRID_SIZE, 4 * bs.GRID_SIZE],
+                      dtype=np.float32)
+        self.s1 = np.zeros([IMAGE_DEPTH, bs.GRID_SIZE, 4 * bs.GRID_SIZE],
+                      dtype=np.float32)
+        self.force = np.zeros([2], dtype=np.float32)
+
+    def __len__(self):
+        return TRAINING_DATA_SIZE
+
+    def __getitem__(self, idx):
+        random.seed(idx)
+        self.my_block_sys.reset()
+        # Collect 4 initial frames (s0)
+        for i in range(4):
+            observation = self.my_block_sys.step(
+                   bs.FORCE_SCALE * (random.random() - 0.5),
+                                           bs.FORCE_SCALE * (random.random() - 0.5))
+            self.s0[:, :,
+               (i * bs.GRID_SIZE):
+               ((i * bs.GRID_SIZE) + bs.GRID_SIZE)] = observation
+            force[:] = (np.array([bs.FORCE_SCALE *
+                                    (random.random() - 0.5),
+                                    bs.FORCE_SCALE * (random.random() - 0.5)],
+                                    dtype=np.float32))
+        # Collect 4 following frames (s1)
+        for i in range(4):
+            observation = self.my_block_sys.step(self.force[0],
+                                            self.force[1])
+            self.s1[:, :,
+               (i * bs.GRID_SIZE):
+               ((i * bs.GRID_SIZE) + bs.GRID_SIZE)] = observation
+
+        return (self.s0, self.force, self.s1)
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,8 +61,11 @@ s1 = pickle.load(open("s1.p", "rb"))
 s0_tensor = torch.from_numpy(s0)
 force_tensor = torch.from_numpy(force)
 s1_tensor = torch.from_numpy(s1)
-samples_dataset = torch.utils.data.TensorDataset(s0_tensor,
-                                                 force_tensor, s1_tensor)
+#samples_dataset = torch.utils.data.TensorDataset(s0_tensor,
+#                                                 force_tensor, s1_tensor)
+
+samples_dataset = BlockDataSet()
+print("samples" + str(len(samples_dataset)))
 
 dataloader = DataLoader(samples_dataset, batch_size=BATCH_SIZE,
                         shuffle=False, num_workers=4)

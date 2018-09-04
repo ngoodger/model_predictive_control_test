@@ -4,7 +4,9 @@ from random import random
 import pickle
 import torch.utils.data
 import time
+import os
 
+SAMPLE_FOLDER = "samples/"
 
 SAMPLE_COUNT = 100000
 IMAGE_DEPTH = 1
@@ -41,19 +43,25 @@ for sample_idx in range(SAMPLE_COUNT):
         s1[sample_idx, :, :,
            (i * bs.GRID_SIZE):
            ((i * bs.GRID_SIZE) + bs.GRID_SIZE)] = observation
-    """
+        with open(os.path.join(SAMPLE_FOLDER, "f_{}.txt".format(sample_idx)), "w") as f:
+            f.write(str(force[sample_idx, 0]))
+            f.write(str(force[sample_idx, 1]))
+           
     for i in range(4):
         time.sleep(0.1)
         s0_frame = s0[sample_idx, :, :, (i * bs.GRID_SIZE):
                       (i * bs.GRID_SIZE + bs.GRID_SIZE)]
-        my_block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+        #img = bs.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+    pickle.dump(s0[sample_idx, :, :, :], open(os.path.join(SAMPLE_FOLDER, "s0_{}_{}.p".format(sample_idx, i)), "wb"))
+        #img.save(os.path.join(SAMPLE_FOLDER, "s0_{}_{}.jpeg".format(sample_idx, i)))
 
     for i in range(4):
         time.sleep(0.1)
         s1_frame = s1[sample_idx, :, :, (i * bs.GRID_SIZE):
                       (i * bs.GRID_SIZE + bs.GRID_SIZE)]
-        my_block_sys.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-    """
+        #img = bs.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+    pickle.dump(s1[sample_idx, :,  :, :], open(os.path.join(SAMPLE_FOLDER, "s1_{}_{}.p".format(sample_idx, i)), "wb"))
+        #img.save(os.path.join(SAMPLE_FOLDER, "s1_{}_{}.jpeg".format(sample_idx, i)))
 
     # samples.append({"s0": s0, "force": force, "s1": s1})
 s0_tensor = torch.from_numpy(s0)

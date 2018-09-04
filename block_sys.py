@@ -132,8 +132,8 @@ if __name__ == "__main__":
                         a.show(4 * np.rint(y1_frame).astype(np.int64))
 """
 def render(grid):
-    assert(grid.shape == (GRID_SIZE, GRID_SIZE))
     grid255 = 255. * grid
     grid_uint = np.rint(grid255).astype('uint8')
     im = Image.fromarray(grid_uint, mode="L")
-    im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(str(datetime.now()))))
+    return im
+    # im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(str(datetime.now()))))
