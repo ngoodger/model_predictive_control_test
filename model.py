@@ -3,23 +3,17 @@ import torch
 import torch.optim as optim
 import numpy as np
 
-LOSS_MEAN_WINDOW = 1000
+LOSS_MEAN_WINDOW = 10000
 PRINT_LOSS_MEAN_ITERATION = 100
 
 
-class Hyperparameters():
-    def __init__(self):
-        self.learning_rate = 1e-3
-        self.fully_connected_middle_layers = 0
-
-
 class Trainer():
-    def __init__(self, cnn_model):
+    def __init__(self, learning_rate, cnn_model):
         self.criterion = nn.BCEWithLogitsLoss()
         self.iteration = 0
         self.cnn_model = cnn_model
         self.optimizer = optim.Adam(self.cnn_model.parameters(),
-                                    lr=1e-3)
+                                    lr=learning_rate)
         self.running_loss = np.ones(LOSS_MEAN_WINDOW)
         self.running_loss_idx = 0
         print(self.cnn_model)
@@ -35,13 +29,13 @@ class Trainer():
             self.running_loss_idx = 0
         else:
             self.running_loss_idx += 1
-
+        mean_loss = np.sum(self.running_loss) / LOSS_MEAN_WINDOW
         if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0:
-            print('loss: {}'.format(sum(self.running_loss) / LOSS_MEAN_WINDOW))
+            print('loss: {}'.format(mean_loss))
         self.optimizer.step()
         del loss
         self.iteration += 1
-        return out.data
+        return (out.data, mean_loss)
 
 
 class ConvNet(nn.Module):
