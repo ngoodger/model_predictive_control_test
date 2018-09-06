@@ -7,12 +7,12 @@ import model
 import time
 import hyperopt
 import pandas as pd
+import os
 BATCH_SIZE = 32
 TRAINING_ITERATIONS = 10000
 
 
 def objective(learning_rate):
-    torch.multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     """
     s0 = pickle.load(open("s0.p", "rb"))
@@ -46,34 +46,36 @@ def objective(learning_rate):
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
             start = time.clock()
-            for i in range(4):
-                time.sleep(0.1)
-                s0_frame = s0_batch[0, :, :, (i * bs.GRID_SIZE):
-                              (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
-                block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+            if not os.name == "nt":
+                for i in range(4):
+                    time.sleep(0.1)
+                    s0_frame = s0_batch[0, :, :, (i * bs.GRID_SIZE):
+                                  (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
+                    block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
 
-            for i in range(4):
-                time.sleep(0.1)
-                y1_frame = y1[0, :, :, (i * bs.GRID_SIZE):
-                              (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
-                block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+                for i in range(4):
+                    time.sleep(0.1)
+                    y1_frame = y1[0, :, :, (i * bs.GRID_SIZE):
+                                  (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
+                    block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
         iteration += 1
     return mean_loss
 
+if __name__ == "__main__":
+    torch.multiprocessing.freeze_support()
+    # Create the domain space
+    learning_rate= hyperopt.hp.uniform('learning_rate', 1e-4, 1e-1)
+    # Create the algorithm
+    tpe_algo = hyperopt.tpe.suggest
+    # Create a trials object
+    tpe_trials = hyperopt.Trials()
+    tpe_best = hyperopt.fmin(fn=objective, space=learning_rate,
+                             algo=tpe_algo, trials=tpe_trials,
+                             max_evals=10)
+    print(tpe_best)
 
-# Create the domain space
-learning_rate= hyperopt.hp.uniform('learning_rate', 1e-4, 1e-1)
-# Create the algorithm
-tpe_algo = hyperopt.tpe.suggest
-# Create a trials object
-tpe_trials = hyperopt.Trials()
-tpe_best = hyperopt.fmin(fn=objective, space=learning_rate,
-                         algo=tpe_algo, trials=tpe_trials,
-                         max_evals=10)
-print(tpe_best)
+    tpe_results = pd.DataFrame({'loss': [x['loss'] for x in tpe_trials.results],
+                                'iteration': tpe_trials.idxs_vals[0]['learning_rate'],
+                                'x': tpe_trials.idxs_vals[1]['learning_rate']})
 
-tpe_results = pd.DataFrame({'loss': [x['loss'] for x in tpe_trials.results],
-                            'iteration': tpe_trials.idxs_vals[0]['learning_rate'],
-                            'x': tpe_trials.idxs_vals[1]['learning_rate']})
-
-print(tpe_results.head(10))
+    print(tpe_results.head(10))
