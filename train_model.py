@@ -61,7 +61,8 @@ def objective(learning_rate):
         iteration += 1
     return mean_loss
 
-if __name__ == "__main__":
+
+def tune_hyperparam():
     torch.multiprocessing.freeze_support()
     # Create the domain space
     learning_rate= hyperopt.hp.uniform('learning_rate', 1e-4, 1e-1)
