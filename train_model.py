@@ -7,9 +7,10 @@ import model
 import time
 import hyperopt
 import pandas as pd
+import math
 import os
 BATCH_SIZE = 32
-TRAINING_ITERATIONS = 10000
+TRAINING_ITERATIONS = 1000000
 
 
 def objective(learning_rate):
@@ -65,7 +66,7 @@ def objective(learning_rate):
 def tune_hyperparam():
     torch.multiprocessing.freeze_support()
     # Create the domain space
-    learning_rate= hyperopt.hp.uniform('learning_rate', 1e-4, 1e-1)
+    learning_rate= hyperopt.hp.loguniform('learning_rate', math.log(1e-4), math.log(1e-1))
     # Create the algorithm
     tpe_algo = hyperopt.tpe.suggest
     # Create a trials object
