@@ -16,6 +16,7 @@ TRAINING_TIME = timedelta(minutes=10)
 
 
 def objective(space):
+    force_add = space["force_add"]
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -23,7 +24,7 @@ def objective(space):
 
     dataloader = DataLoader(samples_dataset, batch_size=batch_size,
                             shuffle=False, num_workers=4)
-    model0 = torch.nn.DataParallel(model.Model0(force_add=False)).to(device)
+    model0 = torch.nn.DataParallel(model.Model0(force_add=force_add)).to(device)
     trainer = model.Trainer(learning_rate=learning_rate, model=model0)
     iteration = 0
     start = datetime.now()
@@ -62,6 +63,7 @@ def tune_hyperparam():
     torch.multiprocessing.freeze_support()
     # Create the domain space
     space = {
+            "force_add": hyperopt.hp.choice('force_add',[True, False]),
             "batch_size": hyperopt.hp.qloguniform('batch_size', math.log(16), math.log(512), 16),
             "learning_rate":   hyperopt.hp.loguniform('learning_rate', math.log(1e-4), math.log(1e-1)),
             }
