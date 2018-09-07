@@ -12,10 +12,10 @@ import pandas as pd
 import math
 import os
 TRAINING_ITERATIONS = 100000000
-TRAINING_TIME = timedelta(minutes=10)
+TRAINING_TIME = timedelta(minutes=20)
 
 
-def objective(space):
+def objective(space, time_limit=TRAINING_TIME):
     force_add = space["force_add"]
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
@@ -77,8 +77,14 @@ def tune_hyperparam():
     print(tpe_best)
 
     tpe_results = pd.DataFrame({'loss': [x['loss'] for x in tpe_trials.results],
+                                'force_add': tpe_trials.idxs_vals[1]['force_add'],
                                 'learning_rate': tpe_trials.idxs_vals[1]['learning_rate'],
                                 'batch_size': tpe_trials.idxs_vals[1]['batch_size'],
                                 })
 
     print(tpe_results.head(20))
+
+
+def train_model():
+    space = {"force_add": True, "learning_rate": 1e-3, "batch_size": 128}
+    objective(space, timedelta(hours=1))
