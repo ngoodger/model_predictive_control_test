@@ -19,25 +19,12 @@ def objective(space):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    """
-    s0 = pickle.load(open("s0.p", "rb"))
-    force = pickle.load(open("force.p", "rb"))
-    s1 = pickle.load(open("s1.p", "rb"))
-
-    s0_tensor = torch.from_numpy(s0)
-    force_tensor = torch.from_numpy(force)
-    s1_tensor = torch.from_numpy(s1)
-    """
-    #samples_dataset = torch.utils.data.TensorDataset(s0_tensor,
-    #                                                 force_tensor, s1_tensor)
-
     samples_dataset = block_dataset.BlockDataSet(TRAINING_ITERATIONS)
-    print("samples" + str(len(samples_dataset)))
 
     dataloader = DataLoader(samples_dataset, batch_size=batch_size,
                             shuffle=False, num_workers=4)
-    cnn_model = torch.nn.DataParallel(model.ConvNet()).to(device)
-    trainer = model.Trainer(learning_rate=learning_rate, cnn_model=cnn_model)
+    model0 = torch.nn.DataParallel(model.Model0(force_add=False)).to(device)
+    trainer = model.Trainer(learning_rate=learning_rate, model=model0)
     iteration = 0
     start = datetime.now()
     start_train = datetime.now()
