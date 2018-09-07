@@ -5,15 +5,19 @@ import block_sys as bs
 import block_dataset
 import model
 import time
+from datetime import datetime
+from datetime import timedelta
 import hyperopt
 import pandas as pd
 import math
 import os
-BATCH_SIZE = 32
-TRAINING_ITERATIONS = 1000000
+TRAINING_ITERATIONS = 100000000
+TRAINING_TIME = timedelta(minutes=10)
 
 
-def objective(learning_rate):
+def objective(space):
+    learning_rate = space["learning_rate"]
+    batch_size = int(space["batch_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     """
     s0 = pickle.load(open("s0.p", "rb"))
@@ -30,12 +34,13 @@ def objective(learning_rate):
     samples_dataset = block_dataset.BlockDataSet(TRAINING_ITERATIONS)
     print("samples" + str(len(samples_dataset)))
 
-    dataloader = DataLoader(samples_dataset, batch_size=BATCH_SIZE,
+    dataloader = DataLoader(samples_dataset, batch_size=batch_size,
                             shuffle=False, num_workers=4)
     cnn_model = torch.nn.DataParallel(model.ConvNet()).to(device)
     trainer = model.Trainer(learning_rate=learning_rate, cnn_model=cnn_model)
     iteration = 0
-    start = time.clock()
+    start = datetime.now()
+    start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
         s0_batch = data[0].to(device)
         force_batch = data[1].to(device)
@@ -43,10 +48,10 @@ def objective(learning_rate):
         y1, mean_loss = trainer.train(s0_batch - 0.5, s1_batch,
                                       force_batch / block_sys.FORCE_SCALE)
         if iteration % 100 == 0:
-            elapsed = time.clock()
+            elapsed = datetime.now()
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
-            start = time.clock()
+            start = datetime.now()
             if not os.name == "nt":
                 for i in range(4):
                     time.sleep(0.1)
@@ -60,24 +65,31 @@ def objective(learning_rate):
                                   (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
                     block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
         iteration += 1
+        # Limit training time to TRAINING_TIME
+        if datetime.now() - start_train > TRAINING_TIME:
+            break
     return mean_loss
 
 
 def tune_hyperparam():
     torch.multiprocessing.freeze_support()
     # Create the domain space
-    learning_rate= hyperopt.hp.loguniform('learning_rate', math.log(1e-4), math.log(1e-1))
+    space = {
+            "batch_size": hyperopt.hp.qloguniform('batch_size', math.log(16), math.log(512), 16),
+            "learning_rate":   hyperopt.hp.loguniform('learning_rate', math.log(1e-4), math.log(1e-1)),
+            }
     # Create the algorithm
     tpe_algo = hyperopt.tpe.suggest
     # Create a trials object
     tpe_trials = hyperopt.Trials()
-    tpe_best = hyperopt.fmin(fn=objective, space=learning_rate,
+    tpe_best = hyperopt.fmin(fn=objective, space=space,
                              algo=tpe_algo, trials=tpe_trials,
-                             max_evals=10)
+                             max_evals=20)
     print(tpe_best)
 
     tpe_results = pd.DataFrame({'loss': [x['loss'] for x in tpe_trials.results],
-                                'iteration': tpe_trials.idxs_vals[0]['learning_rate'],
-                                'x': tpe_trials.idxs_vals[1]['learning_rate']})
+                                'learning_rate': tpe_trials.idxs_vals[1]['learning_rate'],
+                                'batch_size': tpe_trials.idxs_vals[1]['batch_size'],
+                                })
 
-    print(tpe_results.head(10))
+    print(tpe_results.head(20))
