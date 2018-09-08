@@ -39,36 +39,31 @@ class Trainer():
 
 
 class Model0(nn.Module):
-    def __init__(self, force_add):
+    def __init__(self):
         """
         force_add determines whether the force is added or concatonated.
         """
         super(Model0, self).__init__()
-        self.force_add = force_add
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 4, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(4),
-            nn.ReLU())
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(4, 8, kernel_size=6, stride=2, padding=2),
+            nn.Conv2d(4, 8, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(8),
             nn.ReLU())
-        if force_add:
-            channels_l3 = 8
-        else:
-            channels_l3 = 16
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(8, 16, kernel_size=6, stride=2, padding=2),
+            nn.BatchNorm2d(16),
+            nn.ReLU())
         self.layer3 = nn.Sequential(
-            nn.ConvTranspose2d(channels_l3, 4, kernel_size=6, stride=2, padding=2,
+            nn.ConvTranspose2d(16, 8, kernel_size=6, stride=2, padding=2,
                                output_padding=0),
-            nn.BatchNorm2d(4),
+            nn.BatchNorm2d(8),
             nn.ReLU())
         self.layer4 = nn.Sequential(
-            nn.ConvTranspose2d(4, 1, kernel_size=3, stride=2, padding=1,
+            nn.ConvTranspose2d(8, 4, kernel_size=3, stride=2, padding=1,
                                output_padding=1),
-            nn.BatchNorm2d(1)
+            nn.BatchNorm2d(4)
             )
         self.layer_force = nn.Sequential(
-            nn.Linear(2, 2048),
+            nn.Linear(2, 1024),
             nn.ReLU())
         self.layer5 = nn.Sequential(
             nn.Sigmoid())
@@ -79,12 +74,8 @@ class Model0(nn.Module):
         out2 = self.layer2(out1)
         out2_flat = out2.view(out2.size(0), -1)
         # Concatonate block force.
-        if self.force_add:
-            out_combined = torch.add(out2_flat, out_force)
-            out_combined_image = out_combined.view(out_combined.size(0), 8, 8, 32)
-        else:
-            out_combined = torch.cat((out2_flat, out_force), 1)
-            out_combined_image = out_combined.view(out_combined.size(0), 16, 8, 32)
+        out_combined = torch.add(out2_flat, out_force)
+        out_combined_image = out_combined.view(out_combined.size(0), 16, 8, 8)
         out3 = torch.add(self.layer3(out_combined_image), out1)
         logits = torch.add(self.layer4(out3), x)
         out_5 = self.layer5(logits)

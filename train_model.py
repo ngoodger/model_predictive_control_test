@@ -16,7 +16,6 @@ TRAINING_TIME = timedelta(minutes=20)
 
 
 def objective(space, time_limit=TRAINING_TIME):
-    force_add = space["force_add"]
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -24,7 +23,7 @@ def objective(space, time_limit=TRAINING_TIME):
 
     dataloader = DataLoader(samples_dataset, batch_size=batch_size,
                             shuffle=False, num_workers=4)
-    model0 = torch.nn.DataParallel(model.Model0(force_add=force_add)).to(device)
+    model0 = torch.nn.DataParallel(model.Model0()).to(device)
     trainer = model.Trainer(learning_rate=learning_rate, model=model0)
     iteration = 0
     start = datetime.now()
@@ -43,14 +42,12 @@ def objective(space, time_limit=TRAINING_TIME):
             if not os.name == "nt":
                 for i in range(4):
                     time.sleep(0.1)
-                    s0_frame = s0_batch[0, :, :, (i * bs.GRID_SIZE):
-                                  (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
+                    s0_frame = s0_batch[0, i, :, :].data.numpy()
                     block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
 
                 for i in range(4):
                     time.sleep(0.1)
-                    y1_frame = y1[0, :, :, (i * bs.GRID_SIZE):
-                                  (i * bs.GRID_SIZE + bs.GRID_SIZE)].cpu().numpy()
+                    y1_frame = y1[0, i, :, :].data.numpy()
                     block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
         iteration += 1
         # Limit training time to TRAINING_TIME
@@ -63,7 +60,6 @@ def tune_hyperparam():
     torch.multiprocessing.freeze_support()
     # Create the domain space
     space = {
-            "force_add": hyperopt.hp.choice('force_add',[True, False]),
             "batch_size": hyperopt.hp.qloguniform('batch_size', math.log(16), math.log(512), 16),
             "learning_rate":   hyperopt.hp.loguniform('learning_rate', math.log(1e-4), math.log(1e-1)),
             }
@@ -77,7 +73,6 @@ def tune_hyperparam():
     print(tpe_best)
 
     tpe_results = pd.DataFrame({'loss': [x['loss'] for x in tpe_trials.results],
-                                'force_add': tpe_trials.idxs_vals[1]['force_add'],
                                 'learning_rate': tpe_trials.idxs_vals[1]['learning_rate'],
                                 'batch_size': tpe_trials.idxs_vals[1]['batch_size'],
                                 })
@@ -86,5 +81,5 @@ def tune_hyperparam():
 
 
 def train_model():
-    space = {"force_add": True, "learning_rate": 3e-3, "batch_size": 64}
+    space = {"learning_rate": 3e-3, "batch_size": 16}
     objective(space, timedelta(hours=2))

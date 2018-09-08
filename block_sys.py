@@ -15,7 +15,8 @@ FORCE_SCALE = 100000.
 BATCH_SIZE = 64
 DEFAULT_RENDER_PORT = 8123
 FRAME_DIR = "frames"
-IMAGE_DEPTH = 1
+# Image depth is frame at each timestep.
+IMAGE_DEPTH = 4
 
 
 class BlockSys():
@@ -136,5 +137,5 @@ def render(grid):
     grid255 = 255. * grid
     grid_uint = np.rint(grid255).astype('uint8')
     im = Image.fromarray(grid_uint, mode="L")
+    im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(str(datetime.now()))))
     return im
-    # im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(str(datetime.now()))))
