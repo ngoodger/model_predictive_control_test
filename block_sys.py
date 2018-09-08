@@ -37,7 +37,6 @@ class BlockSys():
         self.vx = 1000. * random()
         self.vy = 1000. * random()
 
-
     @property
     def grid(self):
         return self._grid
@@ -64,7 +63,6 @@ class BlockSys():
         self._grid[self.pixel_x: self.pixel_x + BLOCK_SIZE,
                    self.pixel_y: self.pixel_y + BLOCK_SIZE] = 1.
 
-
     def step(self, fx, fy):
         """
         Step physics ENGINE!
@@ -83,6 +81,7 @@ class BlockSys():
         self.y += self.vy * TIMESTEP
         self._rasterize()
         return self._grid
+
 
 """
 if __name__ == "__main__":
@@ -136,6 +135,7 @@ if __name__ == "__main__":
                         y1_frame = y1[0, :, :, (i * GRID_SIZE): (i * GRID_SIZE + GRID_SIZE)]
                         a.show(4 * np.rint(y1_frame).astype(np.int64))
 """
+
 def render(grid):
     grid255 = 255. * grid
     grid_uint = np.rint(grid255).astype('uint8')
