@@ -32,8 +32,11 @@ class BlockSys():
         self.pixel_y = 0
         self.pixel_x_last = 0
         self.pixel_y_last = 0
+        # self.vx = 0.
+        # self.vy = 0.
         self.vx = 1000. * random()
         self.vy = 1000. * random()
+
 
     @property
     def grid(self):

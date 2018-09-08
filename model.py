@@ -18,9 +18,9 @@ class Trainer():
         self.running_loss_idx = 0
         print(self.model)
 
-    def train(self, x, y, x_force):
+    def train(self, x, y, x_force_0, x_force_1):
         self.optimizer.zero_grad()
-        logits, out = self.model.forward(x, x_force)
+        logits, out = self.model.forward(x, x_force_0, x_force_1)
         loss = self.criterion(logits.reshape([logits.size(0), 32 * 128]),
                               y.reshape([y.size(0), 32 * 128]))
         loss.backward()
@@ -62,19 +62,28 @@ class Model0(nn.Module):
                                output_padding=1),
             nn.BatchNorm2d(4)
             )
-        self.layer_force = nn.Sequential(
+        self.layer_force_0 = nn.Sequential(
             nn.Linear(2, 1024),
+            nn.ReLU())
+        self.layer_force_1 = nn.Sequential(
+            nn.Linear(2, 1024),
+            nn.ReLU())
+        self.layer_middle = nn.Sequential(
+            nn.Linear(1024, 1024),
             nn.ReLU())
         self.layer5 = nn.Sequential(
             nn.Sigmoid())
 
-    def forward(self, x, x_force):
-        out_force = self.layer_force(x_force)
+    def forward(self, x, x_force_0, x_force_1):
+        out_force_0 = self.layer_force_0(x_force_1)
+        out_force_1 = self.layer_force_1(x_force_1)
         out1 = self.layer1(x)
         out2 = self.layer2(out1)
         out2_flat = out2.view(out2.size(0), -1)
+        out_middle = self.layer_middle(out2_flat)
         # Concatonate block force.
-        out_combined = torch.add(out2_flat, out_force)
+        out_combined = torch.add(torch.add(out_middle, out_force_0), out_force_1)
+        # out_combined = torch.add(out2_flat, out_force_1)
         out_combined_image = out_combined.view(out_combined.size(0), 16, 8, 8)
         out3 = torch.add(self.layer3(out_combined_image), out1)
         logits = torch.add(self.layer4(out3), x)

@@ -14,7 +14,6 @@ import os
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 
-
 def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
@@ -29,12 +28,13 @@ def objective(space, time_limit=TRAINING_TIME):
     start = datetime.now()
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
-        s0_batch = data[0].to(device)
-        force_batch = data[1].to(device)
-        s1_batch = data[2].to(device)
+        force_0_batch = data[0].to(device)
+        s0_batch = data[1].to(device)
+        force_1_batch = data[2].to(device)
+        s1_batch = data[3].to(device)
         y1, mean_loss = trainer.train(s0_batch - 0.5, s1_batch,
-                                      force_batch / block_sys.FORCE_SCALE)
-        if iteration % 100 == 0:
+                                      force_0_batch / block_sys.FORCE_SCALE, force_1_batch / block_sys.FORCE_SCALE)
+        if iteration % 1000 == 0:
             elapsed = datetime.now()
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
@@ -45,6 +45,10 @@ def objective(space, time_limit=TRAINING_TIME):
                     s0_frame = s0_batch[0, i, :, :].data.numpy()
                     block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
 
+                for i in range(4):
+                    time.sleep(0.1)
+                    s1_frame = s1_batch[0, i, :, :].data.numpy()
+                    block_sys.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
                 for i in range(4):
                     time.sleep(0.1)
                     y1_frame = y1[0, i, :, :].data.numpy()
@@ -81,5 +85,5 @@ def tune_hyperparam():
 
 
 def train_model():
-    space = {"learning_rate": 3e-3, "batch_size": 16}
+    space = {"learning_rate": 3e-3, "batch_size": 1}
     objective(space, timedelta(hours=2))
