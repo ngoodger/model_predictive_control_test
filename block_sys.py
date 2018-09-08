@@ -82,6 +82,25 @@ class BlockSys():
         self._rasterize()
         return self._grid
 
+    def step_simple(self, fx, fy):
+        """
+        Step physics ENGINE!
+        """
+        self.vx += ((fx * TIMESTEP) / BLOCK_MASS) - self.vx * FRICTION
+        # Bounce off wall
+        if ((self.x < BLOCK_SIZE_HALF) or self.x >
+                (GRID_SIZE - BLOCK_SIZE_HALF)):
+            self.vx = - self.vx
+        self.x += self.vx * TIMESTEP
+        self.vy += ((fy * TIMESTEP) / BLOCK_MASS) - self.vy * FRICTION
+        # Bounce off wall
+        if ((self.y < BLOCK_SIZE_HALF) or self.y >
+                (GRID_SIZE - BLOCK_SIZE_HALF)):
+            self.vy = - self.vy
+        self.y += self.vy * TIMESTEP
+        # self._rasterize()
+        return np.array((self.x, self.y))
+
 
 """
 if __name__ == "__main__":

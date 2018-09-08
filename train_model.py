@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 import block_sys
 import block_sys as bs
 import block_dataset
-import model
+import model 
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -29,16 +29,22 @@ def objective(space, time_limit=TRAINING_TIME):
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
         force_0_batch = data[0].to(device)
+        # print(force_0_batch)
         s0_batch = data[1].to(device)
+        # print(s0_batch)
         force_1_batch = data[2].to(device)
+        # print(force_1_batch)
         s1_batch = data[3].to(device)
-        y1, mean_loss = trainer.train(s0_batch - 0.5, s1_batch,
-                                      force_0_batch / block_sys.FORCE_SCALE, force_1_batch / block_sys.FORCE_SCALE)
+        # print(s1_batch)
+        y1, mean_loss = trainer.train(s0_batch, s1_batch,
+                                      force_0_batch, force_1_batch)
+        #print(y1)
         if iteration % 1000 == 0:
             elapsed = datetime.now()
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
             start = datetime.now()
+            """
             if not os.name == "nt":
                 for i in range(4):
                     time.sleep(0.1)
@@ -53,6 +59,7 @@ def objective(space, time_limit=TRAINING_TIME):
                     time.sleep(0.1)
                     y1_frame = y1[0, i, :, :].data.numpy()
                     block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+            """
         iteration += 1
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:
@@ -85,5 +92,5 @@ def tune_hyperparam():
 
 
 def train_model():
-    space = {"learning_rate": 3e-3, "batch_size": 1}
+    space = {"learning_rate": 1e-3, "batch_size": 1}
     objective(space, timedelta(hours=2))
