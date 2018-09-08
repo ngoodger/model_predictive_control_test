@@ -54,7 +54,7 @@ def objective(space, time_limit=TRAINING_TIME):
                     block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
         iteration += 1
         # Limit training time to TRAINING_TIME
-        if datetime.now() - start_train > TRAINING_TIME:
+        if datetime.now() - start_train > time_limit:
             break
     return mean_loss
 
@@ -86,5 +86,5 @@ def tune_hyperparam():
 
 
 def train_model():
-    space = {"force_add": True, "learning_rate": 1e-3, "batch_size": 128}
-    objective(space, timedelta(hours=1))
+    space = {"force_add": True, "learning_rate": 3e-3, "batch_size": 64}
+    objective(space, timedelta(hours=2))
