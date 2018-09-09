@@ -22,7 +22,18 @@ def objective(space, time_limit=TRAINING_TIME):
 
     dataloader = DataLoader(samples_dataset, batch_size=batch_size,
                             shuffle=False, num_workers=4)
-    model0 = torch.nn.DataParallel(model.Model0()).to(device)
+    model_no_parallel = model.Model0(layer_1_cnn_filters=8,
+                         layer_2_cnn_filters=16,
+                         layer_3_cnn_filters=16,
+                         layer_4_cnn_filters=16,
+                         layer_1_kernel_size=6,
+                         layer_2_kernel_size=6,
+                         layer_3_kernel_size=6,
+                         layer_4_kernel_size=6,
+                         force_hidden_layer_size=32,
+                         middle_hidden_layer_size=64,
+                         )
+    model0 = torch.nn.DataParallel(model_no_parallel).to(device)
     trainer = model.Trainer(learning_rate=learning_rate, model=model0)
     iteration = 0
     start = datetime.now()
@@ -44,7 +55,6 @@ def objective(space, time_limit=TRAINING_TIME):
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
             start = datetime.now()
-            """
             if not os.name == "nt":
                 for i in range(4):
                     time.sleep(0.1)
@@ -59,7 +69,6 @@ def objective(space, time_limit=TRAINING_TIME):
                     time.sleep(0.1)
                     y1_frame = y1[0, i, :, :].data.numpy()
                     block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-            """
         iteration += 1
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:

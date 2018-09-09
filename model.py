@@ -1,10 +1,15 @@
 from torch import nn
 import torch
 import torch.optim as optim
+from block_sys import IMAGE_DEPTH, GRID_SIZE
 import numpy as np
 
 LOSS_MEAN_WINDOW = 10000
 PRINT_LOSS_MEAN_ITERATION = 100
+
+STRIDE = 2
+
+
 
 
 class Trainer():
@@ -21,8 +26,8 @@ class Trainer():
     def train(self, x, y, x_force_0, x_force_1):
         self.optimizer.zero_grad()
         logits, out = self.model.forward(x, x_force_0, x_force_1)
-        loss = self.criterion(logits.reshape([logits.size(0), 32 * 128]),
-                              y.reshape([y.size(0), 32 * 128]))
+        loss = self.criterion(logits.reshape([logits.size(0), -1]),
+                              y.reshape([y.size(0), -1]))
         loss.backward()
         self.running_loss[self.running_loss_idx] = loss.data[0]
         if self.running_loss_idx >= LOSS_MEAN_WINDOW - 1:
@@ -33,70 +38,121 @@ class Trainer():
         if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0:
             print('loss: {}'.format(mean_loss))
         self.optimizer.step()
-        del loss
         self.iteration += 1
         return (out.data, mean_loss)
 
 
 class Model0(nn.Module):
-    def __init__(self):
+    def __init__(self, layer_1_cnn_filters,
+                layer_2_cnn_filters,
+                layer_3_cnn_filters,
+                layer_4_cnn_filters,
+                layer_1_kernel_size,
+                layer_2_kernel_size,
+                layer_3_kernel_size, layer_4_kernel_size,
+                force_hidden_layer_size,
+                middle_hidden_layer_size):
         """
         force_add determines whether the force is added or concatonated.
         """
+
+        self.layer_1_cnn_filters = layer_1_cnn_filters
+        self.layer_2_cnn_filters = layer_2_cnn_filters
+        self.layer_3_cnn_filters = layer_3_cnn_filters
+        self.layer_4_cnn_filters = layer_4_cnn_filters
+        self.layer_1_kernel_size = layer_1_kernel_size
+        self.layer_2_kernel_size = layer_2_kernel_size
+        self.layer_3_kernel_size = layer_3_kernel_size
+        self.layer_4_kernel_size = layer_4_kernel_size
+        self.force_hidden_layer_size = force_hidden_layer_size
+        self.middle_hidden_layer_size = middle_hidden_layer_size
+        LAYERS = 4
+        self.middle_layer_image_width = GRID_SIZE / (2 ** LAYERS)
+        middle_layer_size = int(layer_4_cnn_filters * (self.middle_layer_image_width ** 2))
+        self.middle_layer_size = middle_layer_size
+        print(self.middle_layer_image_width)
+        print(self.middle_layer_size)
         super(Model0, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(4, 4, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(IMAGE_DEPTH, layer_1_cnn_filters, kernel_size=layer_1_kernel_size, stride=STRIDE, padding=layer_1_kernel_size / 3),
             # nn.BatchNorm2d(2),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer2 = nn.Sequential(
-            nn.Conv2d(4, 8, kernel_size=6, stride=2, padding=2),
+            nn.Conv2d(layer_1_cnn_filters, layer_2_cnn_filters, kernel_size=layer_2_kernel_size, stride=STRIDE, padding=layer_2_kernel_size / 3),
             # nn.BatchNorm2d(4),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer3 = nn.Sequential(
-            nn.ConvTranspose2d(8, 4, kernel_size=6, stride=2, padding=2,
-                               output_padding=0),
-            # nn.BatchNorm2d(2),
-            nn.ReLU())
+            nn.Conv2d(layer_2_cnn_filters, layer_3_cnn_filters, kernel_size=layer_3_kernel_size, stride=STRIDE, padding=layer_3_kernel_size / 3),
+            # nn.BatchNorm2d(4),
+            nn.LeakyReLU())
         self.layer4 = nn.Sequential(
-            nn.ConvTranspose2d(4, 4, kernel_size=3, stride=2, padding=1,
-                               output_padding=1),
+            nn.Conv2d(layer_3_cnn_filters, layer_4_cnn_filters, kernel_size=layer_4_kernel_size, stride=STRIDE, padding=layer_4_kernel_size / 3),
+            # nn.BatchNorm2d(4),
+            nn.LeakyReLU())
+        self.layer5 = nn.Sequential(
+            nn.ConvTranspose2d(layer_4_cnn_filters, layer_3_cnn_filters, kernel_size=layer_4_kernel_size, stride=STRIDE, padding=layer_4_kernel_size / 3, output_padding=0 if layer_4_kernel_size == 6 else 1),
+            # nn.BatchNorm2d(4),
+            nn.LeakyReLU())
+        self.layer6 = nn.Sequential(
+            nn.ConvTranspose2d(layer_3_cnn_filters, layer_2_cnn_filters, kernel_size=layer_3_kernel_size, stride=STRIDE, padding=layer_3_kernel_size / 3, output_padding=0 if layer_3_kernel_size == 6 else 1),
+            # nn.BatchNorm2d(4),
+            nn.LeakyReLU())
+        self.layer7 = nn.Sequential(
+            nn.ConvTranspose2d(layer_2_cnn_filters, layer_1_cnn_filters, kernel_size=layer_2_kernel_size, stride=STRIDE, padding=layer_2_kernel_size / 3,
+                               output_padding=0 if layer_2_kernel_size == 6 else 1), # nn.BatchNorm2d(2),
+            nn.LeakyReLU())
+        self.layer8 = nn.Sequential(
+            nn.ConvTranspose2d(layer_1_cnn_filters, IMAGE_DEPTH, kernel_size=layer_1_kernel_size, stride=STRIDE, padding=layer_1_kernel_size / 3,
+                               output_padding= 0 if layer_1_kernel_size == 6 else 1),
             # nn.BatchNorm2d(4)
             )
         self.layer_force_0 = nn.Sequential(
-            nn.Linear(4, 16),
-            nn.ReLU())
+            nn.Linear(4, force_hidden_layer_size),
+            nn.LeakyReLU())
         self.layer_force_1 = nn.Sequential(
-            nn.Linear(16, 64),
-            nn.ReLU())
+            nn.Linear(force_hidden_layer_size, int(middle_hidden_layer_size / 2)),
+            nn.LeakyReLU())
         self.layer_middle_0 = nn.Sequential(
-            nn.Linear(512, 64),
-            nn.ReLU())
+            nn.Linear(middle_layer_size, int(middle_hidden_layer_size / 2)),
+            nn.LeakyReLU())
         self.layer_middle_1 = nn.Sequential(
-            nn.Linear(128, 512),
-            nn.ReLU())
-        self.layer5 = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, middle_layer_size),
+            nn.LeakyReLU())
+        self.layer9 = nn.Sequential(
             nn.Sigmoid())
 
     def forward(self, x, x_force_0, x_force_1):
         out_force_0 = self.layer_force_0(torch.cat((x_force_0, x_force_1), 1))
         out_force_1 = self.layer_force_1(out_force_0)
         out1 = self.layer1(x)
+        # print(out1.shape)
         out2 = self.layer2(out1)
-        out2_flat = out2.view(out2.size(0), -1)
-        out_middle_0 = self.layer_middle_0(out2_flat)
+        # print(out2.shape)
+        out3 = self.layer3(out2)
+        # print(out3.shape)
+        out4 = self.layer4(out3)
+        # print(out4.shape)
+        out4_flat = out4.view(out4.size(0), -1)
+        out_middle_0 = self.layer_middle_0(out4_flat)
         # Concatonate block force.
         # out_combined = torch.add(torch.add(out2_flat, out_force_0), out_force_1)
         out_combined = self.layer_middle_1(torch.cat((out_middle_0, out_force_1), 1))
 
         # out_combined = torch.add(out2_flat, out_force_1)
-        out_combined_image = out_combined.view(out_combined.size(0), 8, 8, 8)
+        out_combined_image = out_combined.view(out_combined.size(0), self.layer_4_cnn_filters, self.middle_layer_image_width, self.middle_layer_image_width)
         # print(out_combined_image.shape)
         # out3 = torch.add(self.layer3(out_combined_image), out1)
-        out3 = self.layer3(out_combined_image)
+        out5 = self.layer5(out_combined_image)
+        # print(out5.shape)
+        out6 = self.layer6(out5)
+        # print(out6.shape)
+        out7 = self.layer7(out6)
+        # print(out7.shape)
         # logits = torch.add(self.layer4(out3), x)
-        logits = self.layer4(out3)
-        out_5 = self.layer5(logits)
-        return (logits, out_5)
+        logits = self.layer8(out7)
+        out_9 = self.layer9(logits)
+        # print(out_9.shape)
+        return (logits, out_9)
 
 class Trainer1():
     def __init__(self, learning_rate, model):
@@ -137,27 +193,27 @@ class Model1(nn.Module):
         super(Model1, self).__init__()
         self.layer_0 = nn.Sequential(
             nn.Linear(8, 16),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer_1 = nn.Sequential(
             nn.Linear(16, 16),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer_2 = nn.Sequential(
             nn.Linear(32, 16),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer_3 = nn.Sequential(
             nn.Linear(16, 8))
         self.layer_force_0_0 = nn.Sequential(
             nn.Linear(2, 8),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer_force_0_1 = nn.Sequential(
             nn.Linear(8, 8),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer_force_1_0 = nn.Sequential(
             nn.Linear(2, 8),
-            nn.ReLU())
+            nn.LeakyReLU())
         self.layer_force_1_1 = nn.Sequential(
             nn.Linear(8, 8),
-            nn.ReLU())
+            nn.LeakyReLU())
 
     def forward(self, x, x_force_0, x_force_1):
         out_force_0_0 = self.layer_force_0_0(x_force_0)
