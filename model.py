@@ -74,35 +74,35 @@ class Model0(nn.Module):
         print(self.middle_layer_size)
         super(Model0, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(IMAGE_DEPTH, layer_1_cnn_filters, kernel_size=layer_1_kernel_size, stride=STRIDE, padding=layer_1_kernel_size / 3),
+            nn.Conv2d(IMAGE_DEPTH, layer_1_cnn_filters, kernel_size=layer_1_kernel_size, stride=STRIDE, padding=int(layer_1_kernel_size / 3)),
             # nn.BatchNorm2d(2),
             nn.LeakyReLU())
         self.layer2 = nn.Sequential(
-            nn.Conv2d(layer_1_cnn_filters, layer_2_cnn_filters, kernel_size=layer_2_kernel_size, stride=STRIDE, padding=layer_2_kernel_size / 3),
+            nn.Conv2d(layer_1_cnn_filters, layer_2_cnn_filters, kernel_size=layer_2_kernel_size, stride=STRIDE, padding=int(layer_2_kernel_size / 3)),
             # nn.BatchNorm2d(4),
             nn.LeakyReLU())
         self.layer3 = nn.Sequential(
-            nn.Conv2d(layer_2_cnn_filters, layer_3_cnn_filters, kernel_size=layer_3_kernel_size, stride=STRIDE, padding=layer_3_kernel_size / 3),
+            nn.Conv2d(layer_2_cnn_filters, layer_3_cnn_filters, kernel_size=layer_3_kernel_size, stride=STRIDE, padding=int(layer_3_kernel_size / 3)),
             # nn.BatchNorm2d(4),
             nn.LeakyReLU())
         self.layer4 = nn.Sequential(
-            nn.Conv2d(layer_3_cnn_filters, layer_4_cnn_filters, kernel_size=layer_4_kernel_size, stride=STRIDE, padding=layer_4_kernel_size / 3),
+            nn.Conv2d(layer_3_cnn_filters, layer_4_cnn_filters, kernel_size=layer_4_kernel_size, stride=STRIDE, padding=int(layer_4_kernel_size / 3)),
             # nn.BatchNorm2d(4),
             nn.LeakyReLU())
         self.layer5 = nn.Sequential(
-            nn.ConvTranspose2d(layer_4_cnn_filters, layer_3_cnn_filters, kernel_size=layer_4_kernel_size, stride=STRIDE, padding=layer_4_kernel_size / 3, output_padding=0 if layer_4_kernel_size == 6 else 1),
+            nn.ConvTranspose2d(layer_4_cnn_filters, layer_3_cnn_filters, kernel_size=layer_4_kernel_size, stride=STRIDE, padding=int(layer_4_kernel_size / 3), output_padding=0 if layer_4_kernel_size == 6 else 1),
             # nn.BatchNorm2d(4),
             nn.LeakyReLU())
         self.layer6 = nn.Sequential(
-            nn.ConvTranspose2d(layer_3_cnn_filters, layer_2_cnn_filters, kernel_size=layer_3_kernel_size, stride=STRIDE, padding=layer_3_kernel_size / 3, output_padding=0 if layer_3_kernel_size == 6 else 1),
+            nn.ConvTranspose2d(layer_3_cnn_filters, layer_2_cnn_filters, kernel_size=layer_3_kernel_size, stride=STRIDE, padding=int(layer_3_kernel_size / 3), output_padding=0 if layer_3_kernel_size == 6 else 1),
             # nn.BatchNorm2d(4),
             nn.LeakyReLU())
         self.layer7 = nn.Sequential(
-            nn.ConvTranspose2d(layer_2_cnn_filters, layer_1_cnn_filters, kernel_size=layer_2_kernel_size, stride=STRIDE, padding=layer_2_kernel_size / 3,
+            nn.ConvTranspose2d(layer_2_cnn_filters, layer_1_cnn_filters, kernel_size=layer_2_kernel_size, stride=STRIDE, padding=int(layer_2_kernel_size / 3),
                                output_padding=0 if layer_2_kernel_size == 6 else 1), # nn.BatchNorm2d(2),
             nn.LeakyReLU())
         self.layer8 = nn.Sequential(
-            nn.ConvTranspose2d(layer_1_cnn_filters, IMAGE_DEPTH, kernel_size=layer_1_kernel_size, stride=STRIDE, padding=layer_1_kernel_size / 3,
+            nn.ConvTranspose2d(layer_1_cnn_filters, IMAGE_DEPTH, kernel_size=layer_1_kernel_size, stride=STRIDE, padding=int(layer_1_kernel_size / 3),
                                output_padding= 0 if layer_1_kernel_size == 6 else 1),
             # nn.BatchNorm2d(4)
             )
