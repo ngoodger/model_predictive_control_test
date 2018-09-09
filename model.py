@@ -67,7 +67,7 @@ class Model0(nn.Module):
         self.force_hidden_layer_size = force_hidden_layer_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
         LAYERS = 4
-        self.middle_layer_image_width = GRID_SIZE / (2 ** LAYERS)
+        self.middle_layer_image_width = int(GRID_SIZE / (2 ** LAYERS))
         middle_layer_size = int(layer_4_cnn_filters * (self.middle_layer_image_width ** 2))
         self.middle_layer_size = middle_layer_size
         print(self.middle_layer_image_width)
