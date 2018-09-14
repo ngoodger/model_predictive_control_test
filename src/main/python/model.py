@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 import torch.optim as optim
-from block_sys import IMAGE_DEPTH, GRID_SIZE, FRAMES
+from block_sys import IMAGE_DEPTH, GRID_SIZE
 import numpy as np
 
 LOSS_MEAN_WINDOW = 100000

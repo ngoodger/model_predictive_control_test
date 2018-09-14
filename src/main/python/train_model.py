@@ -4,7 +4,6 @@ import block_sys
 import block_sys as bs
 import block_dataset
 import model
-import time
 from datetime import datetime
 from datetime import timedelta
 import hyperopt
@@ -111,6 +110,6 @@ def tune_hyperparam():
     print(tpe_results.head(20))
 
 
-def train_model():
+if __name__ == "__main__":
     space = {"learning_rate": 1e-3, "batch_size": 1}
     objective(space, timedelta(hours=6))
