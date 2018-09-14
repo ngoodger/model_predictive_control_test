@@ -16,10 +16,11 @@ BATCH_SIZE = 64
 DEFAULT_RENDER_PORT = 8123
 FRAME_DIR = "frames"
 # Image depth is frame at each timestep.
-IMAGE_DEPTH = 4
+IMAGE_DEPTH = 1
+FRAMES = 4
 
 
-class BlockSys():
+class BlockSys:
     def __init__(self):
         self._grid = np.zeros([GRID_SIZE, GRID_SIZE], dtype=np.float32)
         self.reset()
@@ -52,16 +53,26 @@ class BlockSys():
         # Check bounds
         pixel_x_bounded = 0 if pixel_x_corner < 0 else pixel_x_corner
         pixel_y_bounded = 0 if pixel_y_corner < 0 else pixel_y_corner
-        self.pixel_x = ((GRID_SIZE - BLOCK_SIZE) if pixel_x_bounded >
-                        (GRID_SIZE - BLOCK_SIZE) else pixel_x_bounded)
-        self.pixel_y = ((GRID_SIZE - BLOCK_SIZE) if pixel_y_bounded >
-                        (GRID_SIZE - BLOCK_SIZE) else pixel_y_bounded)
+        self.pixel_x = (
+            (GRID_SIZE - BLOCK_SIZE)
+            if pixel_x_bounded > (GRID_SIZE - BLOCK_SIZE)
+            else pixel_x_bounded
+        )
+        self.pixel_y = (
+            (GRID_SIZE - BLOCK_SIZE)
+            if pixel_y_bounded > (GRID_SIZE - BLOCK_SIZE)
+            else pixel_y_bounded
+        )
         # Zeroise last position
-        self._grid[self.pixel_x_last: self.pixel_x_last + BLOCK_SIZE,
-                   self.pixel_y_last: self.pixel_y_last + BLOCK_SIZE] = 0.
+        self._grid[
+            self.pixel_x_last : self.pixel_x_last + BLOCK_SIZE,
+            self.pixel_y_last : self.pixel_y_last + BLOCK_SIZE,
+        ] = 0.
         # Add block
-        self._grid[self.pixel_x: self.pixel_x + BLOCK_SIZE,
-                   self.pixel_y: self.pixel_y + BLOCK_SIZE] = 1.
+        self._grid[
+            self.pixel_x : self.pixel_x + BLOCK_SIZE,
+            self.pixel_y : self.pixel_y + BLOCK_SIZE,
+        ] = 1.
 
     def step(self, fx, fy):
         """
@@ -69,15 +80,13 @@ class BlockSys():
         """
         self.vx += ((fx * TIMESTEP) / BLOCK_MASS) - self.vx * FRICTION
         # Bounce off wall
-        if ((self.x < BLOCK_SIZE_HALF) or self.x >
-                (GRID_SIZE - BLOCK_SIZE_HALF)):
-            self.vx = - self.vx
+        if (self.x < BLOCK_SIZE_HALF) or self.x > (GRID_SIZE - BLOCK_SIZE_HALF):
+            self.vx = -self.vx
         self.x += self.vx * TIMESTEP
         self.vy += ((fy * TIMESTEP) / BLOCK_MASS) - self.vy * FRICTION
         # Bounce off wall
-        if ((self.y < BLOCK_SIZE_HALF) or self.y >
-                (GRID_SIZE - BLOCK_SIZE_HALF)):
-            self.vy = - self.vy
+        if (self.y < BLOCK_SIZE_HALF) or self.y > (GRID_SIZE - BLOCK_SIZE_HALF):
+            self.vy = -self.vy
         self.y += self.vy * TIMESTEP
         self._rasterize()
         return self._grid
@@ -88,15 +97,13 @@ class BlockSys():
         """
         self.vx += ((fx * TIMESTEP) / BLOCK_MASS) - self.vx * FRICTION
         # Bounce off wall
-        if ((self.x < BLOCK_SIZE_HALF) or self.x >
-                (GRID_SIZE - BLOCK_SIZE_HALF)):
-            self.vx = - self.vx
+        if (self.x < BLOCK_SIZE_HALF) or self.x > (GRID_SIZE - BLOCK_SIZE_HALF):
+            self.vx = -self.vx
         self.x += self.vx * TIMESTEP
         self.vy += ((fy * TIMESTEP) / BLOCK_MASS) - self.vy * FRICTION
         # Bounce off wall
-        if ((self.y < BLOCK_SIZE_HALF) or self.y >
-                (GRID_SIZE - BLOCK_SIZE_HALF)):
-            self.vy = - self.vy
+        if (self.y < BLOCK_SIZE_HALF) or self.y > (GRID_SIZE - BLOCK_SIZE_HALF):
+            self.vy = -self.vy
         self.y += self.vy * TIMESTEP
         # self._rasterize()
         return np.array((self.x, self.y))
@@ -155,9 +162,10 @@ if __name__ == "__main__":
                         a.show(4 * np.rint(y1_frame).astype(np.int64))
 """
 
+
 def render(grid):
     grid255 = 255. * grid
-    grid_uint = np.rint(grid255).astype('uint8')
+    grid_uint = np.rint(grid255).astype("uint8")
     im = Image.fromarray(grid_uint, mode="L")
     im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(str(datetime.now()))))
     return im
