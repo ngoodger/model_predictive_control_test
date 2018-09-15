@@ -172,12 +172,10 @@ class Model0(nn.Module):
             nn.Linear(4, force_hidden_layer_size), nn.LeakyReLU()
         )
         self.layer_force_1 = nn.Sequential(
-            nn.Linear(force_hidden_layer_size, int(middle_hidden_layer_size / 2)),
-            nn.LeakyReLU(),
+            nn.Linear(force_hidden_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
         )
         self.layer_middle_0 = nn.Sequential(
-            nn.Linear(middle_layer_size, int(middle_hidden_layer_size / 2)),
-            nn.LeakyReLU(),
+            nn.Linear(middle_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
         )
         self.layer_middle_1 = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, middle_layer_size), nn.LeakyReLU()
@@ -203,8 +201,9 @@ class Model0(nn.Module):
         out4_flat = out4.view(out4.size(0), -1)
         out_middle_0 = self.layer_middle_0(out4_flat)
         # Concatonate block force.
-        # out_combined = torch.add(torch.add(out2_flat, out_force_0), out_force_1)
-        out_combined = self.layer_middle_1(torch.cat((out_middle_0, out_force_1), 1))
+        out_combined = self.layer_middle_1(torch.add(out_middle_0, out_force_1))
+
+        # out_combined = self.layer_middle_1(torch.cat((out_middle_0, out_force_1), 1))
 
         # out_combined = torch.add(out2_flat, out_force_1)
         out_combined_image = out_combined.view(

@@ -25,16 +25,16 @@ def objective(space, time_limit=TRAINING_TIME):
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
     model_no_parallel = model.Model0(
-        layer_1_cnn_filters=8,
+        layer_1_cnn_filters=16,
         layer_2_cnn_filters=16,
-        layer_3_cnn_filters=32,
-        layer_4_cnn_filters=64,
+        layer_3_cnn_filters=16,
+        layer_4_cnn_filters=32,
         layer_1_kernel_size=3,
         layer_2_kernel_size=3,
         layer_3_kernel_size=3,
         layer_4_kernel_size=3,
-        force_hidden_layer_size=128,
-        middle_hidden_layer_size=256,
+        force_hidden_layer_size=32,
+        middle_hidden_layer_size=512,
     )
     model0 = torch.nn.DataParallel(model_no_parallel).to(device)
     trainer = model.Trainer(learning_rate=learning_rate, model=model0)
@@ -76,7 +76,8 @@ def objective(space, time_limit=TRAINING_TIME):
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:
             break
-    return mean_loss
+    # return mean_loss
+    return model0
 
 
 def tune_hyperparam():
@@ -112,4 +113,9 @@ def tune_hyperparam():
 
 if __name__ == "__main__":
     space = {"learning_rate": 1e-3, "batch_size": 1}
-    objective(space, timedelta(hours=6))
+    my_model = objective(space, timedelta(hours=6))
+    torch.save(my_model, "my_model.pt")
+    # model = torch.load('my_model.pt')
+
+    # .. to load your previously training model:
+    # model.load_state_dict(torch.load('mytraining.pt'))
