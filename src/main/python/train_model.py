@@ -1,7 +1,8 @@
 import torch
 from torch.utils.data import DataLoader
-import block_sys
-import block_sys as bs
+
+# import block_sys
+# import block_sys as bs
 import block_dataset
 import model
 from datetime import datetime
@@ -9,7 +10,8 @@ from datetime import timedelta
 import hyperopt
 import pandas as pd
 import math
-import os
+
+# import os
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
@@ -24,7 +26,7 @@ def objective(space, time_limit=TRAINING_TIME):
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
-    model_no_parallel = model.Model0(
+    model_no_parallel = model.Model(
         layer_1_cnn_filters=16,
         layer_2_cnn_filters=16,
         layer_3_cnn_filters=16,
@@ -37,9 +39,9 @@ def objective(space, time_limit=TRAINING_TIME):
         middle_hidden_layer_size=128,
     )
     model0 = torch.nn.DataParallel(model_no_parallel).to(device)
-    trainer = model.Trainer(learning_rate=learning_rate, model=model0)
+    trainer = model.ModelTrainer(learning_rate=learning_rate, model=model0)
     iteration = 0
-    start = datetime.now()
+    # start = datetime.now()
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
         force_0_batch = data[0].to(device)
@@ -50,8 +52,17 @@ def objective(space, time_limit=TRAINING_TIME):
         # print(force_1_batch)
         s1_batch = data[3].to(device)
         # print(s1_batch)
-        y1, mean_loss = trainer.train(s0_batch, s1_batch, force_0_batch, force_1_batch)
+        # y1, mean_loss = trainer.train({"s0":s0_batch, "s1":s1_batch, "force_0":force_0_batch, "force_1": force_1_batch})
+        trainer.train(
+            {
+                "s0": s0_batch,
+                "s1": s1_batch,
+                "force_0": force_0_batch,
+                "force_1": force_1_batch,
+            }
+        )
         # print(y1)
+        """
         if iteration % 1000 == 0:
             elapsed = datetime.now()
             elapsed = elapsed - start
@@ -72,6 +83,7 @@ def objective(space, time_limit=TRAINING_TIME):
                     # time.sleep(0.1)
                     y1_frame = y1[0, :, :, :, i].data.numpy()
                     block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+        """
         iteration += 1
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:

@@ -1,46 +1,26 @@
 from torch import nn
 import torch
-import torch.optim as optim
 from block_sys import IMAGE_DEPTH, GRID_SIZE
-import numpy as np
+import trainer
 
-LOSS_MEAN_WINDOW = 100000
-PRINT_LOSS_MEAN_ITERATION = 100
 
 STRIDE = 2
 
 
-class Trainer:
+class ModelTrainer(trainer.BaseTrainer):
     def __init__(self, learning_rate, model):
-        self.criterion = nn.BCEWithLogitsLoss()
-        self.iteration = 0
-        self.model = model
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.running_loss = np.ones(LOSS_MEAN_WINDOW)
-        self.running_loss_idx = 0
-        print(self.model)
+        super(ModelTrainer, self).__init__(learning_rate, model)
 
-    def train(self, x, y, x_force_0, x_force_1):
-        self.optimizer.zero_grad()
-        logits, out = self.model.forward(x, x_force_0, x_force_1)
+    def calc_loss(self, batch_data):
+        logits, out = self.model.forward(batch_data)
+        y = batch_data["s1"]
         loss = self.criterion(
             logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
         )
-        loss.backward()
-        self.running_loss[self.running_loss_idx] = loss.data[0]
-        if self.running_loss_idx >= LOSS_MEAN_WINDOW - 1:
-            self.running_loss_idx = 0
-        else:
-            self.running_loss_idx += 1
-        mean_loss = np.sum(self.running_loss) / LOSS_MEAN_WINDOW
-        if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0:
-            print("loss: {}".format(mean_loss))
-        self.optimizer.step()
-        self.iteration += 1
-        return (out.data, mean_loss)
+        return loss
 
 
-class Model0(nn.Module):
+class Model(nn.Module):
     def __init__(
         self,
         layer_1_cnn_filters,
@@ -76,7 +56,7 @@ class Model0(nn.Module):
         self.middle_layer_size = middle_layer_size
         print(self.middle_layer_image_width)
         print(self.middle_layer_size)
-        super(Model0, self).__init__()
+        super(Model, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Conv3d(
                 IMAGE_DEPTH,
@@ -182,7 +162,10 @@ class Model0(nn.Module):
         )
         self.layer9 = nn.Sequential(nn.Sigmoid())
 
-    def forward(self, x, x_force_0, x_force_1):
+    def forward(self, batch_data):
+        x = batch_data["s0"]
+        x_force_0 = batch_data["force_0"]
+        x_force_1 = batch_data["force_1"]
         print_shape = False
         out_force_0 = self.layer_force_0(torch.cat((x_force_0, x_force_1), 1))
         out1 = self.layer1(x)
