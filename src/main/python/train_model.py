@@ -34,7 +34,7 @@ def objective(space, time_limit=TRAINING_TIME):
         layer_3_kernel_size=3,
         layer_4_kernel_size=3,
         force_hidden_layer_size=32,
-        middle_hidden_layer_size=512,
+        middle_hidden_layer_size=128,
     )
     model0 = torch.nn.DataParallel(model_no_parallel).to(device)
     trainer = model.Trainer(learning_rate=learning_rate, model=model0)

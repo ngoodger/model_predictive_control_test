@@ -169,10 +169,7 @@ class Model0(nn.Module):
             # nn.BatchNorm2d(4)
         )
         self.layer_force_0 = nn.Sequential(
-            nn.Linear(4, force_hidden_layer_size), nn.LeakyReLU()
-        )
-        self.layer_force_1 = nn.Sequential(
-            nn.Linear(force_hidden_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
+            nn.Linear(4, middle_layer_size), nn.LeakyReLU()
         )
         self.layer_middle_0 = nn.Sequential(
             nn.Linear(middle_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
@@ -180,12 +177,14 @@ class Model0(nn.Module):
         self.layer_middle_1 = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, middle_layer_size), nn.LeakyReLU()
         )
+        self.layer_middle_2 = nn.Sequential(
+            nn.Linear(middle_layer_size, middle_layer_size), nn.LeakyReLU()
+        )
         self.layer9 = nn.Sequential(nn.Sigmoid())
 
     def forward(self, x, x_force_0, x_force_1):
         print_shape = False
         out_force_0 = self.layer_force_0(torch.cat((x_force_0, x_force_1), 1))
-        out_force_1 = self.layer_force_1(out_force_0)
         out1 = self.layer1(x)
         if print_shape:
             print(out1.shape)
@@ -199,15 +198,13 @@ class Model0(nn.Module):
         if print_shape:
             print(out4.shape)
         out4_flat = out4.view(out4.size(0), -1)
-        out_middle_0 = self.layer_middle_0(out4_flat)
-        # Concatonate block force.
-        out_combined = self.layer_middle_1(torch.add(out_middle_0, out_force_1))
+        # Add block force.
+        out_combined = self.layer_middle_0(torch.add(out4_flat, out_force_0))
+        out_middle_1 = self.layer_middle_1(out_combined)
+        out_middle_2 = self.layer_middle_2(out_middle_1)
 
-        # out_combined = self.layer_middle_1(torch.cat((out_middle_0, out_force_1), 1))
-
-        # out_combined = torch.add(out2_flat, out_force_1)
-        out_combined_image = out_combined.view(
-            out_combined.size(0),
+        out_combined_image = out_middle_2.view(
+            out_middle_2.size(0),
             self.layer_4_cnn_filters,
             self.middle_layer_image_width,
             self.middle_layer_image_width,
