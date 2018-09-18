@@ -1,8 +1,7 @@
-from torch import nn
 import torch
-from block_sys import IMAGE_DEPTH, GRID_SIZE
 import trainer
-
+from block_sys import GRID_SIZE, IMAGE_DEPTH
+from torch import nn
 
 STRIDE = 2
 
@@ -10,6 +9,9 @@ STRIDE = 2
 class ModelTrainer(trainer.BaseTrainer):
     def __init__(self, learning_rate, model):
         super(ModelTrainer, self).__init__(learning_rate, model)
+
+    def criterion(self):
+        self.criterion = nn.BCEWithLogitsLoss()
 
     def calc_loss(self, batch_data):
         logits, out = self.model.forward(batch_data)
@@ -46,7 +48,6 @@ class Model(nn.Module):
         self.layer_2_kernel_size = layer_2_kernel_size
         self.layer_3_kernel_size = layer_3_kernel_size
         self.layer_4_kernel_size = layer_4_kernel_size
-        self.force_hidden_layer_size = force_hidden_layer_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
         LAYERS = 4
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
