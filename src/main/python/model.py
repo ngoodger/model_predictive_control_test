@@ -10,10 +10,11 @@ class ModelTrainer(trainer.BaseTrainer):
     def __init__(self, learning_rate, model):
         super(ModelTrainer, self).__init__(learning_rate, model)
 
-    def criterion(self):
-        self.criterion = nn.BCEWithLogitsLoss()
+    def get_criterion(self):
+        criterion = nn.BCEWithLogitsLoss()
+        return criterion
 
-    def calc_loss(self, batch_data):
+    def get_loss(self, batch_data):
         logits, out = self.model.forward(batch_data)
         y = batch_data["s1"]
         loss = self.criterion(

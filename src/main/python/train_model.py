@@ -20,7 +20,7 @@ def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    samples_dataset = block_dataset.BlockDataSet(TRAINING_ITERATIONS)
+    samples_dataset = block_dataset.ModelDataSet(TRAINING_ITERATIONS)
 
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
