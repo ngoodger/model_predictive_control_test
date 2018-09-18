@@ -1,15 +1,14 @@
-import torch
-from torch.utils.data import DataLoader
+import math
+from datetime import datetime, timedelta
 
 # import block_sys
 # import block_sys as bs
 import block_dataset
-import model
-from datetime import datetime
-from datetime import timedelta
 import hyperopt
+import model
 import pandas as pd
-import math
+import torch
+from torch.utils.data import DataLoader
 
 # import os
 
@@ -124,7 +123,7 @@ def tune_hyperparam():
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 1e-3, "batch_size": 1}
+    space = {"learning_rate": 3e-3, "batch_size": 16}
     my_model = objective(space, timedelta(hours=6))
     torch.save(my_model, "my_model.pt")
     # model = torch.load('my_model.pt')
