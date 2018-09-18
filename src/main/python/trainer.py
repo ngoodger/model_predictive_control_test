@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
-from torch import nn
-from torch import optim
-import numpy as np
 
-LOSS_MEAN_WINDOW = 100000
+import numpy as np
+from torch import optim
+
+LOSS_MEAN_WINDOW = 1000
 PRINT_LOSS_MEAN_ITERATION = 100
 
 
 class BaseTrainer(ABC):
     def __init__(self, learning_rate, model):
-        self.criterion = nn.BCEWithLogitsLoss()
         self.iteration = 0
         self.model = model
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
@@ -18,7 +17,11 @@ class BaseTrainer(ABC):
         print(self.model)
 
     @abstractmethod
-    def calc_loss(batch_data):
+    def criterion(self):
+        pass
+
+    @abstractmethod
+    def calc_loss(self, batch_data):
         pass
 
     def train(self, batch_data):
