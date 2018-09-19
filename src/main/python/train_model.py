@@ -51,7 +51,6 @@ def objective(space, time_limit=TRAINING_TIME):
         # print(force_1_batch)
         s1_batch = data[3].to(device)
         # print(s1_batch)
-        # y1, mean_loss = trainer.train({"s0":s0_batch, "s1":s1_batch, "force_0":force_0_batch, "force_1": force_1_batch})
         trainer.train(
             {
                 "s0": s0_batch,

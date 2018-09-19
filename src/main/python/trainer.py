@@ -1,5 +1,5 @@
-from abc import abstractmethod
 import abc
+from abc import abstractmethod
 
 import numpy as np
 from torch import optim
@@ -11,14 +11,14 @@ PRINT_LOSS_MEAN_ITERATION = 100
 class BaseTrainer(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, learning_rate, model):
+    def __init__(self, learning_rate, nn_module):
         self.iteration = 0
-        self.model = model
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.nn_module = nn_module
+        self.optimizer = optim.Adam(self.nn_module.parameters(), lr=learning_rate)
         self.running_loss = np.ones(LOSS_MEAN_WINDOW)
         self.running_loss_idx = 0
         self.criterion = self.get_criterion()
-        print(self.model)
+        print(self.nn_module)
 
     @abstractmethod
     def get_criterion(self):
@@ -27,7 +27,7 @@ class BaseTrainer(object):
 
     @abstractmethod
     def get_loss(self, batch_data):
-        # Should return torch loss object. 
+        # Should return torch loss object.
         pass
 
     def train(self, batch_data):
