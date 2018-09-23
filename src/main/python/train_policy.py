@@ -58,7 +58,7 @@ def objective(space, time_limit=TRAINING_TIME):
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 1e-3, "batch_size": 16}
+    space = {"learning_rate": 1e-4, "batch_size": 1}
     my_policy = objective(space, timedelta(hours=6))
     torch.save(my_policy, "my_policy.pt")
     # model = torch.load('my_model.pt')
