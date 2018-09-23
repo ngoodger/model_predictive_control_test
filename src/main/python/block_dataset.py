@@ -2,11 +2,11 @@ from random import random, seed
 
 import block_sys as bs
 import numpy as np
-from block_sys import BLOCK_SIZE, FORCE_SCALE, FRAMES, GRID_SIZE, IMAGE_DEPTH
+from block_sys import FORCE_SCALE, FRAMES, GRID_SIZE, IMAGE_DEPTH
 from torch.utils.data import Dataset
 
 # MEAN_S0 = (BLOCK_SIZE ** 2) / (GRID_SIZE ** 2)
-MEAN_S0 = 0. 
+MEAN_S0 = 0.
 
 
 class ModelDataSet(Dataset):
