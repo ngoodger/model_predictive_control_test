@@ -122,8 +122,8 @@ def tune_hyperparam():
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 3e-3, "batch_size": 16}
-    my_model = objective(space, timedelta(hours=6))
+    space = {"learning_rate": 1e-3, "batch_size": 1}
+    my_model = objective(space, timedelta(hours=3))
     torch.save(my_model, "my_model.pt")
     # model = torch.load('my_model.pt')
 
