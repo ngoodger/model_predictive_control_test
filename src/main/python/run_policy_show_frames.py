@@ -1,0 +1,68 @@
+from random import random
+
+import block_sys as bs
+import numpy as np
+import torch
+from block_sys import FORCE_SCALE, FRAMES, GRID_SIZE, IMAGE_DEPTH
+
+MEAN_S0 = 0.
+
+
+def run_policy_show_frames():
+    TEST_STEPS = 100
+
+    # Use cpu for inference.
+    device = "cpu"
+    my_block_sys = bs.BlockSys()
+    my_block_sys_target = bs.BlockSys()
+    policy = torch.load("my_policy.pt")
+    force_0 = np.zeros([2], dtype=np.float32)
+    s0 = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
+    s1_target = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 2], dtype=np.float32)
+    # Get Initial state
+    for i in range(FRAMES):
+        force_0[:] = np.array(
+            [random() - 0.5, random() - 0.5], dtype=np.float32
+        ).reshape([1, 2])
+        for i in range(FRAMES):
+            s0[0, 0, :, :, i] = (
+                my_block_sys.step(FORCE_SCALE * force_0[0], FORCE_SCALE * force_0[1])
+                - MEAN_S0
+            )
+    # Get a single target frame from target block sys.
+    s1_target[0, 0, :, :, 0] = my_block_sys_target.step(0., 0.)
+    s1_target[0, 0, :, :, 1] = s1_target[0, 0, :, :, 1]
+    # Save frames to disk.
+    # Only 2 identical frames used as label so we can just save 1.
+    for i in range(1):
+        s1_frame = s1_target[0, :, :, :, i]
+        bs.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+    for i in range(TEST_STEPS):
+        force_0_tensor = torch.from_numpy(force_0).to(device)
+        s0_tensor = torch.from_numpy(s0).to(device)
+        s1_target_tensor = torch.from_numpy(s1_target).to(device)
+        batch_data = {
+            "s0": s0_tensor,
+            "s1": s1_target_tensor,
+            "force_0": force_0_tensor,
+        }
+        force_1 = policy.forward(batch_data)
+
+        for i in range(FRAMES):
+            s0_frame = s0_tensor[0, :, :, :, i].data.numpy()
+            # print(s0_batch.shape)
+            bs.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+
+        # Get new s0 based on policy force.
+        force_0 = force_1.data.numpy()
+        for i in range(FRAMES):
+            s0[0, 0, :, :, i] = (
+                my_block_sys.step(
+                    FORCE_SCALE * force_0[0, 0], FORCE_SCALE * force_0[0, 1]
+                )
+                - MEAN_S0
+            )
+
+
+if __name__ == "__main__":
+    run_policy_show_frames()
