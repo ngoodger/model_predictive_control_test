@@ -1,5 +1,5 @@
 install:
-	cp pre-commit .git/hooks/
+	cp scripts/pre-commit .git/hooks/
 clean:
 	rm -r frames
 format:

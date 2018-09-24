@@ -1,0 +1,4 @@
+#!/bin/bash
+ABSOLUTE_PROJECT_SRC_DIR="${PWD}/src/main/python ${PWD}/src/test/python" \
+source scripts/define_python_format_function.sh && \
+format_python
