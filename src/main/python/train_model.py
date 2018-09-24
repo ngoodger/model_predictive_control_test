@@ -1,4 +1,5 @@
 import math
+import os.path
 from datetime import datetime, timedelta
 
 # import block_sys
@@ -14,6 +15,7 @@ from torch.utils.data import DataLoader
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
+MODEL_PATH = "my_model.pt"
 
 
 def objective(space, time_limit=TRAINING_TIME):
@@ -37,7 +39,10 @@ def objective(space, time_limit=TRAINING_TIME):
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
     )
-    model0 = torch.nn.DataParallel(model_no_parallel).to(device)
+    if os.path.exists(MODEL_PATH):
+        model0 = torch.load(MODEL_PATH)
+    else:
+        model0 = torch.nn.DataParallel(model_no_parallel).to(device)
     trainer = model.ModelTrainer(learning_rate=learning_rate, model=model0)
     iteration = 0
     # start = datetime.now()
@@ -122,9 +127,9 @@ def tune_hyperparam():
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 3e-4, "batch_size": 1}
+    space = {"learning_rate": 3e-6, "batch_size": 8}
     my_model = objective(space, timedelta(hours=1))
-    torch.save(my_model, "my_model.pt")
+    torch.save(my_model, MODEL_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:

@@ -15,7 +15,7 @@ class PolicyTrainer(trainer.BaseTrainer):
         self.model = model
 
     def get_criterion(self):
-        criterion = nn.MSELoss()
+        criterion = nn.BCEWithLogitsLoss()
         return criterion
 
     def get_loss(self, batch_data):
@@ -23,11 +23,11 @@ class PolicyTrainer(trainer.BaseTrainer):
         # Augment batch data with force from policy
         batch_data["force_1"] = force_1
         logits, out = self.model.forward(batch_data)
-        # Loss is only relative to the final 2 frames.
+        # Loss is only relative to the final frame.
         # We just want zero velocity at the goal.  We don't care how we get there.
-        logits_last_2_frames = logits[:, :, :, :, 2:]
+        logits_last_frame = logits[:, :, :, :, 3]
         y = batch_data["s1"]
-        logits_flat = logits_last_2_frames.reshape([logits_last_2_frames.size(0), -1])
+        logits_flat = logits_last_frame.reshape([logits_last_frame.size(0), -1])
         y_flat = y.reshape([y.size(0), -1])
         loss = self.criterion(logits_flat, y_flat)
         return loss

@@ -1,3 +1,4 @@
+import os.path
 from datetime import datetime, timedelta
 
 import block_dataset
@@ -7,6 +8,7 @@ from torch.utils.data import DataLoader
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
+POLICY_PATH = "my_policy.pt"
 
 
 def objective(space, time_limit=TRAINING_TIME):
@@ -31,7 +33,10 @@ def objective(space, time_limit=TRAINING_TIME):
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
     )
-    policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
+    if os.path.exists(POLICY_PATH):
+        policy0 = torch.load(POLICY_PATH)
+    else:
+        policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
     trainer = policy.PolicyTrainer(
         learning_rate=learning_rate, policy=policy0, model=model
     )
@@ -58,9 +63,9 @@ def objective(space, time_limit=TRAINING_TIME):
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 1e-4, "batch_size": 1}
+    space = {"learning_rate": 1e-3, "batch_size": 1}
     my_policy = objective(space, timedelta(hours=1))
-    torch.save(my_policy, "my_policy.pt")
+    torch.save(my_policy, POLICY_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:

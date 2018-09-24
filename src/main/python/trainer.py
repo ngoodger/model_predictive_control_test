@@ -18,6 +18,7 @@ class BaseTrainer(object):
         self.running_loss = np.ones(LOSS_MEAN_WINDOW)
         self.running_loss_idx = 0
         self.criterion = self.get_criterion()
+        self.loss_mean_full = False
         print(self.nn_module)
 
     @abstractmethod
@@ -37,10 +38,11 @@ class BaseTrainer(object):
         self.running_loss[self.running_loss_idx] = loss.data[0]
         if self.running_loss_idx >= LOSS_MEAN_WINDOW - 1:
             self.running_loss_idx = 0
+            self.loss_mean_full = True
         else:
             self.running_loss_idx += 1
         mean_loss = np.sum(self.running_loss) / LOSS_MEAN_WINDOW
-        if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0:
+        if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0 and self.loss_mean_full:
             print("loss: {}".format(mean_loss))
         self.optimizer.step()
         self.iteration += 1

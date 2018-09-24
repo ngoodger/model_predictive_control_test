@@ -60,8 +60,8 @@ class PolicyDataSet(Dataset):
         self.s0 = np.zeros(
             [IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32
         )
-        # Only two frames are needed as target. Only care about 0 velocity and correct position.
-        self.s1 = np.zeros([IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 2], dtype=np.float32)
+        # Only one frame is used as target.
+        self.s1 = np.zeros([IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 1], dtype=np.float32)
         self.force_0 = np.zeros([2], dtype=np.float32)
         self.size = size
 
@@ -90,6 +90,5 @@ class PolicyDataSet(Dataset):
         # fully utilized.
         self.my_block_sys.reset()
         self.s1[0, :, :, 0] = self.my_block_sys.step(0., 0.)
-        self.s1[0, :, :, 1] = self.s1[0, :, :, 1]
 
         return (self.force_0, self.s0, self.s1)
