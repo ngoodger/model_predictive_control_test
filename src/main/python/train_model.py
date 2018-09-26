@@ -45,7 +45,7 @@ def objective(space, time_limit=TRAINING_TIME):
         model0 = torch.nn.DataParallel(model_no_parallel).to(device)
     trainer = model.ModelTrainer(learning_rate=learning_rate, model=model0)
     iteration = 0
-    # start = datetime.now()
+    start = datetime.now()
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
         force_0_batch = data[0].to(device)
@@ -64,29 +64,11 @@ def objective(space, time_limit=TRAINING_TIME):
                 "force_1": force_1_batch,
             }
         )
-        # print(y1)
-        """
-        if iteration % 1000 == 0:
+        if iteration % 100 == 0:
             elapsed = datetime.now()
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
             start = datetime.now()
-            if not os.name == "nt":
-                for i in range(4):
-                    # time.sleep(0.1)
-                    s0_frame = s0_batch[0, :, :, :, i].data.numpy()
-                    print(s0_batch.shape)
-                    block_sys.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-
-                for i in range(bs.FRAMES):
-                    # time.sleep(0.1)
-                    s1_frame = s1_batch[0, :, :, :, i].data.numpy()
-                    block_sys.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-                for i in range(bs.FRAMES):
-                    # time.sleep(0.1)
-                    y1_frame = y1[0, :, :, :, i].data.numpy()
-                    block_sys.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-        """
         iteration += 1
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:
