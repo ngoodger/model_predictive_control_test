@@ -1,6 +1,6 @@
 import torch
 import trainer
-from block_sys import GRID_SIZE, IMAGE_DEPTH
+from block_sys import GRID_SIZE, IMAGE_DEPTH, FORCE_SCALE
 from torch import nn
 
 LOSS_MEAN_WINDOW = 100000
@@ -21,7 +21,7 @@ class PolicyTrainer(trainer.BaseTrainer):
     def get_loss(self, batch_data):
         force_1 = self.nn_module.forward(batch_data)
         # Augment batch data with force from policy
-        batch_data["force_1"] = force_1
+        batch_data["force_1"] = force_1 * FORCE_SCALE * 0.5
         logits, out = self.model.forward(batch_data)
         # Loss is only relative to the final frame.
         # We just want zero velocity at the goal.  We don't care how we get there.
@@ -125,7 +125,9 @@ class Policy(nn.Module):
             nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
             nn.LeakyReLU(),
         )
-        self.layer_middle_2 = nn.Sequential(nn.Linear(middle_hidden_layer_size, 2))
+        self.layer_middle_2 = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, 2), nn.Tanh()
+        )
 
     def forward(self, batch_data):
         x = batch_data["s0"]

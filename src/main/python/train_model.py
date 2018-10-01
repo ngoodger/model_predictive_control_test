@@ -16,13 +16,14 @@ from torch.utils.data import DataLoader
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
+SEQ_LEN = 10
 
 
 def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    samples_dataset = block_dataset.ModelDataSet(TRAINING_ITERATIONS)
+    samples_dataset = block_dataset.ModelDataSet(TRAINING_ITERATIONS, SEQ_LEN)
 
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
@@ -38,6 +39,7 @@ def objective(space, time_limit=TRAINING_TIME):
         layer_4_kernel_size=3,
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
+        recurrent_layer_size=32,
     )
     if os.path.exists(MODEL_PATH):
         model0 = torch.load(MODEL_PATH)
@@ -48,22 +50,9 @@ def objective(space, time_limit=TRAINING_TIME):
     start = datetime.now()
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
-        force_0_batch = data[0].to(device)
-        # print(force_0_batch)
-        s0_batch = data[1].to(device)
-        # print(s0_batch)
-        force_1_batch = data[2].to(device)
-        # print(force_1_batch)
-        s1_batch = data[3].to(device)
-        # print(s1_batch)
-        trainer.train(
-            {
-                "s0": s0_batch,
-                "s1": s1_batch,
-                "force_0": force_0_batch,
-                "force_1": force_1_batch,
-            }
-        )
+        force = data[0]
+        s = data[1]
+        trainer.train({"s": s, "force": force, "seq_len": SEQ_LEN})
         if iteration % 100 == 0:
             elapsed = datetime.now()
             elapsed = elapsed - start
@@ -109,7 +98,7 @@ def tune_hyperparam():
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 3e-6, "batch_size": 8}
+    space = {"learning_rate": 1e-4, "batch_size": 1}
     my_model = objective(space, timedelta(hours=1))
     torch.save(my_model, MODEL_PATH)
     # model = torch.load('my_model.pt')

@@ -17,9 +17,9 @@ do
 done
 function format_python ()
 {
-    docker run -e SRC="${ABSOLUTE_PROJECT_SRC_DIR_DOCKER}" ${ABSOLUTE_PROJECT_SRC_DIR_MOUNTS} python_black:latest
+    docker run -e SRC="${ABSOLUTE_PROJECT_SRC_DIR_DOCKER}" ${ABSOLUTE_PROJECT_SRC_DIR_MOUNTS} python_format:latest
 }
 function format_python_check ()
 {
-    docker run -e SRC="${ABSOLUTE_PROJECT_SRC_DIR_DOCKER}" -e OPTIONS=$CHECK_OPTION ${ABSOLUTE_PROJECT_SRC_DIR_MOUNTS} python_black:latest
+    docker run -e SRC="${ABSOLUTE_PROJECT_SRC_DIR_DOCKER}" -e OPTIONS=$CHECK_OPTION ${ABSOLUTE_PROJECT_SRC_DIR_MOUNTS} python_format:latest
 }

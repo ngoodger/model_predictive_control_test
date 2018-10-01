@@ -15,11 +15,22 @@ class ModelTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
-        logits, out = self.nn_module.forward(batch_data)
-        y = batch_data["s1"]
-        loss = self.criterion(
-            logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
-        )
+        for i in range(batch_data["seq_len"] - 1):
+            s_initial = batch_data["s"][0]
+            force_0 = batch_data["force"][i]
+            force_1 = batch_data["force"][i + 1]
+            if i == 0:
+                logits, out, recurrent_state = self.nn_module.forward(
+                    s_initial, None, force_0, force_1, first_run=True
+                )
+            else:
+                logits, out, recurrent_state = self.nn_module.forward(
+                    None, recurrent_state, force_0, force_1, first_run=False
+                )
+            y = batch_data["s"][i + 1]
+            loss = self.criterion(
+                logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
+            )
         return loss
 
 
@@ -36,11 +47,13 @@ class Model(nn.Module):
         layer_4_kernel_size,
         force_hidden_layer_size,
         middle_hidden_layer_size,
+        recurrent_layer_size,
     ):
         """
         force_add determines whether the force is added or concatonated.
         """
 
+        super(Model, self).__init__()
         self.layer_1_cnn_filters = layer_1_cnn_filters
         self.layer_2_cnn_filters = layer_2_cnn_filters
         self.layer_3_cnn_filters = layer_3_cnn_filters
@@ -50,16 +63,17 @@ class Model(nn.Module):
         self.layer_3_kernel_size = layer_3_kernel_size
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
+        self.recurrent_layer_size = recurrent_layer_size
+        self.init_rnn = torch.nn.Parameter(
+            torch.rand(middle_hidden_layer_size), requires_grad=True
+        )
         LAYERS = 4
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
         middle_layer_size = int(
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
         )
         self.middle_layer_size = middle_layer_size
-        print(self.middle_layer_image_width)
-        print(self.middle_layer_size)
-        super(Model, self).__init__()
-        self.layer1 = nn.Sequential(
+        self.cnn_layer_0 = nn.Sequential(
             nn.Conv3d(
                 IMAGE_DEPTH,
                 layer_1_cnn_filters,
@@ -70,7 +84,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(2),
             nn.LeakyReLU(),
         )
-        self.layer2 = nn.Sequential(
+        self.cnn_layer_1 = nn.Sequential(
             nn.Conv3d(
                 layer_1_cnn_filters,
                 layer_2_cnn_filters,
@@ -81,7 +95,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer3 = nn.Sequential(
+        self.cnn_layer_2 = nn.Sequential(
             nn.Conv3d(
                 layer_2_cnn_filters,
                 layer_3_cnn_filters,
@@ -92,7 +106,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer4 = nn.Sequential(
+        self.cnn_layer_3 = nn.Sequential(
             nn.Conv3d(
                 layer_3_cnn_filters,
                 layer_4_cnn_filters,
@@ -103,7 +117,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer5 = nn.Sequential(
+        self.tcnn_layer_0 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_4_cnn_filters,
                 layer_3_cnn_filters,
@@ -115,7 +129,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer6 = nn.Sequential(
+        self.tcnn_layer_1 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_3_cnn_filters,
                 layer_2_cnn_filters,
@@ -127,7 +141,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer7 = nn.Sequential(
+        self.tcnn_layer_2 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_2_cnn_filters,
                 layer_1_cnn_filters,
@@ -139,7 +153,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(2),
             nn.LeakyReLU(),
         )
-        self.layer8 = nn.Sequential(
+        self.tcnn_layer_3 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_1_cnn_filters,
                 IMAGE_DEPTH,
@@ -150,63 +164,71 @@ class Model(nn.Module):
             ),
             # nn.BatchNorm2d(4)
         )
-        self.layer_force_0 = nn.Sequential(
-            nn.Linear(4, middle_layer_size), nn.LeakyReLU()
+        self.layer_force_recurrent = nn.Sequential(
+            nn.Linear(4, middle_hidden_layer_size), nn.LeakyReLU()
         )
-        self.layer_middle_0 = nn.Sequential(
+        self.layer_cnn_recurrent = nn.Sequential(
             nn.Linear(middle_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
         )
-        self.layer_middle_1 = nn.Sequential(
+        self.layer_recurrent_hidden = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
+            nn.LeakyReLU(),
+        )
+        self.layer_recurrent_out = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, middle_layer_size), nn.LeakyReLU()
         )
-        self.layer_middle_2 = nn.Sequential(
-            nn.Linear(middle_layer_size, middle_layer_size), nn.LeakyReLU()
+        self.layer_recurrent_hidden = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
+            nn.LeakyReLU(),
         )
-        self.layer9 = nn.Sequential(nn.Sigmoid())
+        self.layer_recurrent = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
+            nn.LeakyReLU(),
+        )
+        self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
-    def forward(self, batch_data):
-        x = batch_data["s0"]
-        x_force_0 = batch_data["force_0"]
-        x_force_1 = batch_data["force_1"]
-        print_shape = False
-        out_force_0 = self.layer_force_0(torch.cat((x_force_0, x_force_1), 1))
-        out1 = self.layer1(x)
-        if print_shape:
-            print(out1.shape)
-        out2 = self.layer2(out1)
-        if print_shape:
-            print(out2.shape)
-        out3 = self.layer3(out2)
-        if print_shape:
-            print(out3.shape)
-        out4 = self.layer4(out3)
-        if print_shape:
-            print(out4.shape)
-        out4_flat = out4.view(out4.size(0), -1)
-        # Add block force.
-        out_combined = self.layer_middle_0(torch.add(out4_flat, out_force_0))
-        out_middle_1 = self.layer_middle_1(out_combined)
-        out_middle_2 = self.layer_middle_2(out_middle_1)
+    def forward(
+        self, s_initial, last_recurrent_state, force_0, force_1, first_run=False
+    ):
+        if first_run:
+            x = s_initial
+        else:
+            x = None
+        x_force_0 = force_0
+        x_force_1 = force_1
+        if first_run:
+            recurrent_state = self.init_rnn
+        else:
+            recurrent_state = last_recurrent_state
+        out_force_0 = self.layer_force_recurrent(torch.cat((x_force_0, x_force_1), 1))
+        recurrent_out = self.layer_recurrent(recurrent_state)
+        if first_run:
+            out1 = self.cnn_layer_0(x)
+            out2 = self.cnn_layer_1(out1)
+            out3 = self.cnn_layer_2(out2)
+            out4 = self.cnn_layer_3(out3)
+            out4_flat = out4.view(out4.size(0), -1)
+            out_combined = self.layer_cnn_recurrent(out4_flat)
+            recurrent_hidden = self.layer_recurrent_hidden(
+                torch.add(torch.add(out_combined, recurrent_out), out_force_0)
+            )
+        else:
+            recurrent_hidden = self.layer_recurrent_hidden(
+                torch.add(recurrent_out, out_force_0)
+            )
+        recurrent_out = self.layer_recurrent(recurrent_hidden)
+        out_flat = self.layer_recurrent_out(recurrent_out)
 
-        out_combined_image = out_middle_2.view(
-            out_middle_2.size(0),
+        out_image = out_flat.view(
+            out_flat.size(0),
             self.layer_4_cnn_filters,
             self.middle_layer_image_width,
             self.middle_layer_image_width,
             1,
         )
-        # out3 = torch.add(self.layer3(out_combined_image), out1)
-        if print_shape:
-            print(out_combined_image.shape)
-        out5 = self.layer5(out_combined_image)
-        out6 = self.layer6(out5)
-        out7 = self.layer7(out6)
-        # logits = torch.add(self.layer4(out3), x)
-        logits = self.layer8(out7)
-        out_9 = self.layer9(logits)
-        if print_shape:
-            print(out5.shape)
-            print(out6.shape)
-            print(out7.shape)
-            print(out_9.shape)
-        return (logits, out_9)
+        out5 = self.tcnn_layer_0(out_image)
+        out6 = self.tcnn_layer_1(out5)
+        out7 = self.tcnn_layer_2(out6)
+        logits = self.tcnn_layer_3(out7)
+        out_9 = self.layer_sigmoid_out(logits)
+        return (logits, out_9, recurrent_out)
