@@ -21,11 +21,11 @@ class ModelTrainer(trainer.BaseTrainer):
             force_1 = batch_data["force"][i + 1]
             if i == 0:
                 logits, out, recurrent_state = self.nn_module.forward(
-                    s_initial, None, force_0, force_1, first_run=True
+                    s_initial, None, force_0, force_1, first_iteration=True
                 )
             else:
                 logits, out, recurrent_state = self.nn_module.forward(
-                    None, recurrent_state, force_0, force_1, first_run=False
+                    None, recurrent_state, force_0, force_1, first_iteration=False
                 )
             y = batch_data["s"][i + 1]
             loss = self.criterion(
@@ -64,7 +64,7 @@ class Model(nn.Module):
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
         self.recurrent_layer_size = recurrent_layer_size
-        self.init_rnn = torch.nn.Parameter(
+        self.init_recurrent_state = torch.nn.Parameter(
             torch.rand(middle_hidden_layer_size), requires_grad=True
         )
         LAYERS = 4
@@ -73,7 +73,7 @@ class Model(nn.Module):
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
         )
         self.middle_layer_size = middle_layer_size
-        self.cnn_layer_0 = nn.Sequential(
+        self.layer_cnn_0 = nn.Sequential(
             nn.Conv3d(
                 IMAGE_DEPTH,
                 layer_1_cnn_filters,
@@ -84,7 +84,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(2),
             nn.LeakyReLU(),
         )
-        self.cnn_layer_1 = nn.Sequential(
+        self.layer_cnn_1 = nn.Sequential(
             nn.Conv3d(
                 layer_1_cnn_filters,
                 layer_2_cnn_filters,
@@ -95,7 +95,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.cnn_layer_2 = nn.Sequential(
+        self.layer_cnn_2 = nn.Sequential(
             nn.Conv3d(
                 layer_2_cnn_filters,
                 layer_3_cnn_filters,
@@ -106,7 +106,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.cnn_layer_3 = nn.Sequential(
+        self.layer_cnn_3 = nn.Sequential(
             nn.Conv3d(
                 layer_3_cnn_filters,
                 layer_4_cnn_filters,
@@ -117,7 +117,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.tcnn_layer_0 = nn.Sequential(
+        self.layer_tcnn_0 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_4_cnn_filters,
                 layer_3_cnn_filters,
@@ -129,7 +129,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.tcnn_layer_1 = nn.Sequential(
+        self.layer_tcnn_1 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_3_cnn_filters,
                 layer_2_cnn_filters,
@@ -141,7 +141,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.tcnn_layer_2 = nn.Sequential(
+        self.layer_tcnn_2 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_2_cnn_filters,
                 layer_1_cnn_filters,
@@ -153,7 +153,7 @@ class Model(nn.Module):
             # nn.BatchNorm2d(2),
             nn.LeakyReLU(),
         )
-        self.tcnn_layer_3 = nn.Sequential(
+        self.layer_tcnn_3 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_1_cnn_filters,
                 IMAGE_DEPTH,
@@ -181,54 +181,58 @@ class Model(nn.Module):
             nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
             nn.LeakyReLU(),
         )
-        self.layer_recurrent = nn.Sequential(
+        self.layer_recurrent_0 = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
+            nn.LeakyReLU(),
+        )
+        self.layer_recurrent_1 = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
             nn.LeakyReLU(),
         )
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
     def forward(
-        self, s_initial, last_recurrent_state, force_0, force_1, first_run=False
+        self, s_initial, last_recurrent_state, force_0, force_1, first_iteration=False
     ):
-        if first_run:
-            x = s_initial
-        else:
-            x = None
-        x_force_0 = force_0
-        x_force_1 = force_1
-        if first_run:
-            recurrent_state = self.init_rnn
-        else:
-            recurrent_state = last_recurrent_state
-        out_force_0 = self.layer_force_recurrent(torch.cat((x_force_0, x_force_1), 1))
-        recurrent_out = self.layer_recurrent(recurrent_state)
-        if first_run:
-            out1 = self.cnn_layer_0(x)
-            out2 = self.cnn_layer_1(out1)
-            out3 = self.cnn_layer_2(out2)
-            out4 = self.cnn_layer_3(out3)
-            out4_flat = out4.view(out4.size(0), -1)
-            out_combined = self.layer_cnn_recurrent(out4_flat)
-            recurrent_hidden = self.layer_recurrent_hidden(
-                torch.add(torch.add(out_combined, recurrent_out), out_force_0)
-            )
-        else:
-            recurrent_hidden = self.layer_recurrent_hidden(
-                torch.add(recurrent_out, out_force_0)
-            )
-        recurrent_out = self.layer_recurrent(recurrent_hidden)
-        out_flat = self.layer_recurrent_out(recurrent_out)
 
-        out_image = out_flat.view(
-            out_flat.size(0),
+        out_force_recurrent = self.layer_force_recurrent(torch.cat((force_0, force_1), 1))
+
+        # On the first iteration of the RNN 
+        # use the learned self.init_recurrent_tate parameter as the initial recurrent state.
+        # Only feed through the initial frame on the first iteration since the model must
+        # rely on latent state to predict future outputs..
+        if first_iteration:
+            x = s_initial
+            out_cnn_0 = self.layer_cnn_0(x)
+            out_cnn_1 = self.layer_cnn_1(out_cnn_0)
+            out_cnn_2 = self.layer_cnn_2(out_cnn_1)
+            out_cnn_3 = self.layer_cnn_3(out_cnn_2)
+            out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
+            out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
+            out_recurrent_0 = self.layer_recurrent_0(self.init_recurrent_state)
+            # Combine outputs from CNN layer, init recurrent state and force layer.
+            out_recurrent_hidden = self.layer_recurrent_hidden(
+                torch.add(torch.add(out_cnn_recurrent, out_recurrent_0), out_force_recurrent)
+            )
+        else:
+            out_recurrent_0 = self.layer_recurrent_0(last_recurrent_state)
+            # Combine outputs from previous recurrent state and force layer.
+            out_recurrent_hidden = self.layer_recurrent_hidden(
+                torch.add(out_recurrent_0, out_force_recurrent)
+            )
+        out_recurrent_state = self.layer_recurrent_1(out_recurrent_hidden)
+        out_image_flat_hidden = self.layer_recurrent_out(out_recurrent_state)
+
+        out_image_hidden = out_image_flat_hidden.view(
+            out_image_flat_hidden.size(0),
             self.layer_4_cnn_filters,
             self.middle_layer_image_width,
             self.middle_layer_image_width,
             1,
         )
-        out5 = self.tcnn_layer_0(out_image)
-        out6 = self.tcnn_layer_1(out5)
-        out7 = self.tcnn_layer_2(out6)
-        logits = self.tcnn_layer_3(out7)
-        out_9 = self.layer_sigmoid_out(logits)
-        return (logits, out_9, recurrent_out)
+        out_tcnn_0 = self.layer_tcnn_0(out_image_hidden)
+        out_tcnn_1  = self.layer_tcnn_1(out_tcnn_0)
+        out_tcnn_2 = self.layer_tcnn_2(out_tcnn_1)
+        out_logits = self.layer_tcnn_3(out_tcnn_2)
+        out_sigmoid = self.layer_sigmoid_out(out_logits)
+        return (out_logits, out_sigmoid, out_recurrent_state)
