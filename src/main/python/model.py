@@ -64,9 +64,12 @@ class Model(nn.Module):
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
         self.recurrent_layer_size = recurrent_layer_size
-        self.init_recurrent_state = torch.nn.Parameter(
-            torch.rand(middle_hidden_layer_size), requires_grad=True
-        )
+        self.init_recurrent_state = (torch.nn.Parameter(
+            torch.rand(2, 1, middle_hidden_layer_size), requires_grad=True
+        ),
+        torch.nn.Parameter(
+            torch.rand(2, 1, middle_hidden_layer_size), requires_grad=True
+        ))
         LAYERS = 4
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
         middle_layer_size = int(
@@ -170,34 +173,21 @@ class Model(nn.Module):
         self.layer_cnn_recurrent = nn.Sequential(
             nn.Linear(middle_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
         )
-        self.layer_recurrent_hidden = nn.Sequential(
-            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
-            nn.LeakyReLU(),
-        )
         self.layer_recurrent_out = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, middle_layer_size), nn.LeakyReLU()
         )
-        self.layer_recurrent_hidden = nn.Sequential(
-            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
-            nn.LeakyReLU(),
-        )
-        self.layer_recurrent_0 = nn.Sequential(
-            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
-            nn.LeakyReLU(),
-        )
-        self.layer_recurrent_1 = nn.Sequential(
-            nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
-            nn.LeakyReLU(),
-        )
+        self.layer_recurrent = nn.LSTM(middle_hidden_layer_size, middle_hidden_layer_size, 2)
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
     def forward(
         self, s_initial, last_recurrent_state, force_0, force_1, first_iteration=False
     ):
 
-        out_force_recurrent = self.layer_force_recurrent(torch.cat((force_0, force_1), 1))
+        out_force_recurrent = self.layer_force_recurrent(
+            torch.cat((force_0, force_1), 1)
+        )
 
-        # On the first iteration of the RNN 
+        # On the first iteration of the RNN
         # use the learned self.init_recurrent_tate parameter as the initial recurrent state.
         # Only feed through the initial frame on the first iteration since the model must
         # rely on latent state to predict future outputs..
@@ -209,19 +199,13 @@ class Model(nn.Module):
             out_cnn_3 = self.layer_cnn_3(out_cnn_2)
             out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
             out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
-            out_recurrent_0 = self.layer_recurrent_0(self.init_recurrent_state)
             # Combine outputs from CNN layer, init recurrent state and force layer.
-            out_recurrent_hidden = self.layer_recurrent_hidden(
-                torch.add(torch.add(out_cnn_recurrent, out_recurrent_0), out_force_recurrent)
-            )
+            combined = torch.add(out_cnn_recurrent, out_force_recurrent)
+            out_recurrent, out_recurrent_state = self.layer_recurrent(combined.view(1, 1, -1), self.init_recurrent_state)
         else:
-            out_recurrent_0 = self.layer_recurrent_0(last_recurrent_state)
             # Combine outputs from previous recurrent state and force layer.
-            out_recurrent_hidden = self.layer_recurrent_hidden(
-                torch.add(out_recurrent_0, out_force_recurrent)
-            )
-        out_recurrent_state = self.layer_recurrent_1(out_recurrent_hidden)
-        out_image_flat_hidden = self.layer_recurrent_out(out_recurrent_state)
+            out_recurrent, out_recurrent_state = self.layer_recurrent(out_force_recurrent.view(1, 1, -1), last_recurrent_state)
+        out_image_flat_hidden = self.layer_recurrent_out(out_recurrent)
 
         out_image_hidden = out_image_flat_hidden.view(
             out_image_flat_hidden.size(0),
@@ -231,7 +215,7 @@ class Model(nn.Module):
             1,
         )
         out_tcnn_0 = self.layer_tcnn_0(out_image_hidden)
-        out_tcnn_1  = self.layer_tcnn_1(out_tcnn_0)
+        out_tcnn_1 = self.layer_tcnn_1(out_tcnn_0)
         out_tcnn_2 = self.layer_tcnn_2(out_tcnn_1)
         out_logits = self.layer_tcnn_3(out_tcnn_2)
         out_sigmoid = self.layer_sigmoid_out(out_logits)
