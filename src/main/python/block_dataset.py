@@ -38,8 +38,7 @@ class ModelDataSet(Dataset):
             for i in range(FRAMES):
                 s_item[0, :, :, i] = (
                     self.my_block_sys.step(
-                        FORCE_SCALE * force_item[0],
-                        FORCE_SCALE * force_item[1],
+                        FORCE_SCALE * force_item[0], FORCE_SCALE * force_item[1]
                     )
                     - MEAN_S0
                 )

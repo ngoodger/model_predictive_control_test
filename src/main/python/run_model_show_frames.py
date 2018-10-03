@@ -10,7 +10,6 @@ def run_model_show_frames():
     TEST_EXAMPLES = 10
 
     # Use cpu for inference.
-    device = "cpu"
     samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES, SEQ_LEN)
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
     model = torch.load("my_model.pt")
