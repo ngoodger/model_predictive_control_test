@@ -1,7 +1,7 @@
 install:
 	cp scripts/pre-commit .git/hooks/
 clean:
-	rm -r frames
+	rm frames/*
 format:
 	ABSOLUTE_PROJECT_SRC_DIR="${PWD}/src/main/python ${PWD}/src/test/python" \
     source scripts/define_python_format_function.sh && \

@@ -13,10 +13,6 @@ class ModelDataSet(Dataset):
     def __init__(self, size, seq_len):
         super(ModelDataSet, self).__init__()
         self.my_block_sys = bs.BlockSys()
-        self.s_item = np.zeros(
-            [IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32
-        )
-        self.force_item = np.zeros([2], dtype=np.float32)
         self.size = size
         self.seq_len = seq_len
 
@@ -33,18 +29,22 @@ class ModelDataSet(Dataset):
         force = []
         s = []
         for seq_idx in range(self.seq_len):
-            self.force_item[:] = self._random_force()
+            s_item = np.zeros(
+                [IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32
+            )
+            force_item = np.zeros([2], dtype=np.float32)
+            force_item[:] = self._random_force()
             # Collect 4 frames
             for i in range(FRAMES):
-                self.s_item[0, :, :, i] = (
+                s_item[0, :, :, i] = (
                     self.my_block_sys.step(
-                        FORCE_SCALE * self.force_item[0],
-                        FORCE_SCALE * self.force_item[1],
+                        FORCE_SCALE * force_item[0],
+                        FORCE_SCALE * force_item[1],
                     )
                     - MEAN_S0
                 )
-            force.append(self.force_item)
-            s.append(self.s_item)
+            force.append(force_item)
+            s.append(s_item)
 
         return (force, s)
 

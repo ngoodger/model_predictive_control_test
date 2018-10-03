@@ -3,37 +3,42 @@ import block_sys as bs
 import torch
 from torch.utils.data import DataLoader
 
+SEQ_LEN = 10
+
 
 def run_model_show_frames():
     TEST_EXAMPLES = 10
 
     # Use cpu for inference.
     device = "cpu"
-    samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES)
+    samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES, SEQ_LEN)
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
     model = torch.load("my_model.pt")
     for batch_idx, data in enumerate(dataloader):
-        force_0_batch = data[0].to(device)
-        s0_batch = data[1].to(device)
-        force_1_batch = data[2].to(device)
-        s1_batch = data[3].to(device)
-        batch_data = {
-            "s0": s0_batch,
-            "s1": s1_batch,
-            "force_0": force_0_batch,
-            "force_1": force_1_batch,
-        }
-        _, y1 = model.forward(batch_data)
-        for i in range(4):
-            s0_frame = s0_batch[0, :, :, :, i].data.numpy()
-            print(s0_batch.shape)
-            bs.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-        for i in range(bs.FRAMES):
-            s1_frame = s1_batch[0, :, :, :, i].data.numpy()
-            bs.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-        for i in range(bs.FRAMES):
-            y1_frame = y1[0, :, :, :, i].data.numpy()
-            bs.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+        batch_data = {"force": data[0], "s": data[1], "seq_len": SEQ_LEN}
+        s = data[1]
+        y1_list = []
+        for i in range(SEQ_LEN - 1):
+            s_initial = batch_data["s"][0]
+            force_0 = batch_data["force"][i]
+            force_1 = batch_data["force"][i + 1]
+            if i == 0:
+                logits, y1, recurrent_state = model.forward(
+                    s_initial, None, force_0, force_1, first_iteration=True
+                )
+            else:
+                logits, y1, recurrent_state = model.forward(
+                    None, recurrent_state, force_0, force_1, first_iteration=False
+                )
+            y1_list.append(y1)
+        for seq_idx in range(SEQ_LEN):
+            for i in range(4):
+                s0_frame = s[seq_idx][0, :, :, :, i].data.numpy()
+                bs.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+        for seq_idx in range(SEQ_LEN - 1):
+            for i in range(bs.FRAMES):
+                y1_frame = y1_list[seq_idx][0, :, :, :, i].data.numpy()
+                bs.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
 
 
 if __name__ == "__main__":
