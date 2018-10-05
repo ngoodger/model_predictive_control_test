@@ -3,7 +3,7 @@ import block_sys as bs
 import torch
 from torch.utils.data import DataLoader
 
-SEQ_LEN = 10 
+SEQ_LEN = 10
 
 
 def run_model_show_frames():

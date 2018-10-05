@@ -2,7 +2,6 @@ import torch
 import trainer
 from block_sys import GRID_SIZE, IMAGE_DEPTH
 from torch import nn
-import block_sys as bs
 
 STRIDE = 2
 
@@ -32,7 +31,8 @@ class ModelTrainer(trainer.BaseTrainer):
             loss = self.criterion(
                 logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
             )
-        return loss 
+        return loss
+
 
 class Model(nn.Module):
     def __init__(
