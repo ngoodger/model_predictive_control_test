@@ -3,7 +3,7 @@ import block_sys as bs
 import torch
 from torch.utils.data import DataLoader
 
-SEQ_LEN = 10
+SEQ_LEN = 10 
 
 
 def run_model_show_frames():
@@ -30,14 +30,26 @@ def run_model_show_frames():
                     None, recurrent_state, force_0, force_1, first_iteration=False
                 )
             y1_list.append(y1)
-        for seq_idx in range(SEQ_LEN):
-            for i in range(4):
-                s0_frame = s[seq_idx][0, :, :, :, i].data.numpy()
-                bs.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+        seq_idx = 0
+        for i in range(4):
+            s0_frame = s[seq_idx][0, :, :, :, i].data.numpy()
+            bs.render(
+                s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
+                "_{}_{}".format(str(seq_idx), str(i)),
+            )
         for seq_idx in range(SEQ_LEN - 1):
+            for i in range(4):
+                s0_frame = s[seq_idx + 1][0, :, :, :, i].data.numpy()
+                bs.render(
+                    s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
+                    "_{}_{}".format(str(seq_idx + 1), str(i)),
+                )
             for i in range(bs.FRAMES):
                 y1_frame = y1_list[seq_idx][0, :, :, :, i].data.numpy()
-                bs.render(y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
+                bs.render(
+                    y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
+                    "_{}_{}".format(str(seq_idx), str(i)),
+                )
 
 
 if __name__ == "__main__":

@@ -146,9 +146,9 @@ if __name__ == "__main__":
 """
 
 
-def render(grid):
+def render(grid, suffix=""):
     grid255 = 255. * grid
     grid_uint = np.rint(grid255).astype("uint8")
     im = Image.fromarray(grid_uint, mode="L")
-    im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(str(datetime.now()))))
+    im.save(os.path.join(FRAME_DIR, "{}{}.jpeg".format(str(datetime.now()), suffix)))
     return im

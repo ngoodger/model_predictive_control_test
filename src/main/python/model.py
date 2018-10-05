@@ -2,6 +2,7 @@ import torch
 import trainer
 from block_sys import GRID_SIZE, IMAGE_DEPTH
 from torch import nn
+import block_sys as bs
 
 STRIDE = 2
 
@@ -15,8 +16,8 @@ class ModelTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
+        s_initial = batch_data["s"][0]
         for i in range(batch_data["seq_len"] - 1):
-            s_initial = batch_data["s"][0]
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
@@ -31,8 +32,7 @@ class ModelTrainer(trainer.BaseTrainer):
             loss = self.criterion(
                 logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
             )
-        return loss
-
+        return loss 
 
 class Model(nn.Module):
     def __init__(

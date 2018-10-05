@@ -18,3 +18,5 @@ run_model_show_frames:
 	python3 src/main/python/run_model_show_frames.py
 run_policy_show_frames:
 	python3 src/main/python/run_policy_show_frames.py
+train_model_docker:
+	docker run pytorch -v ./ /root/project make train_model
