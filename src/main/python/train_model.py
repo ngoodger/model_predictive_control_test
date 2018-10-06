@@ -1,6 +1,7 @@
 import math
 import os.path
 from datetime import datetime, timedelta
+from tensorboardX import SummaryWriter
 
 # import block_sys
 # import block_sys as bs
@@ -23,6 +24,7 @@ SAVE_INTERVAL = 1000
 def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
+    writer = SummaryWriter("log_files/")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     samples_dataset = block_dataset.ModelDataSet(TRAINING_ITERATIONS, SEQ_LEN)
 
@@ -53,8 +55,9 @@ def objective(space, time_limit=TRAINING_TIME):
     for batch_idx, data in enumerate(dataloader):
         force = data[0]
         s = data[1]
-        trainer.train({"s": s, "force": force, "seq_len": SEQ_LEN})
+        loss = trainer.train({"s": s, "force": force, "seq_len": SEQ_LEN})
         if iteration % 100 == 0:
+            writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()
             elapsed = elapsed - start
             print("Time:" + str(elapsed))
@@ -102,7 +105,7 @@ def tune_hyperparam():
 
 if __name__ == "__main__":
     space = {"learning_rate": 1e-4, "batch_size": 1}
-    my_model = objective(space, timedelta(hours=8))
+    my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
