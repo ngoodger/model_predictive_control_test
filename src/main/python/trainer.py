@@ -46,3 +46,4 @@ class BaseTrainer(object):
             print("loss: {}".format(mean_loss))
         self.optimizer.step()
         self.iteration += 1
+        return loss.data[0]
