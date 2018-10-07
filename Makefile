@@ -30,4 +30,4 @@ build_image:
 	docker build . -t mpc_test
 
 train_model_docker:
-	docker run -p 6010:6006 mpc_test /bin/bash -c "make train_model & tensorboard --logdir log_files"
+	docker run -p 6006:6006 -it mpc_test /bin/bash -c "make train_model & tensorboard --logdir log_files"
