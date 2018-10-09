@@ -27,14 +27,10 @@ def run_model_show_frames():
                 )
             else:
                 logits, y1, recurrent_state = model.forward(
-                    s_in,
-                    recurrent_state,
-                    force_0,
-                    force_1,
-                    first_iteration=False,
+                    s_in, recurrent_state, force_0, force_1, first_iteration=False
                 )
             y1_list.append(y1)
-            #s_in = y1
+            # s_in = y1
         for seq_idx in range(SEQ_LEN - 1):
             for i in range(4):
                 s0_frame = s[seq_idx + 1][0, :, :, :, i].data.numpy()

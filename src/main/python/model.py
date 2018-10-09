@@ -28,11 +28,7 @@ class ModelTrainer(trainer.BaseTrainer):
                 )
             else:
                 logits, out, recurrent_state = self.nn_module.forward(
-                    s_in,
-                    recurrent_state,
-                    force_0,
-                    force_1,
-                    first_iteration=False,
+                    s_in, recurrent_state, force_0, force_1, first_iteration=False
                 )
             # Only compute loss if warmed up.
             if i > warmup_steps - 1:
@@ -192,12 +188,7 @@ class Model(nn.Module):
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
     def forward(
-        self,
-        s_in,
-        last_recurrent_state,
-        force_0,
-        force_1,
-        first_iteration=False,
+        self, s_in, last_recurrent_state, force_0, force_1, first_iteration=False
     ):
 
         out_force_recurrent = self.layer_force_recurrent(
