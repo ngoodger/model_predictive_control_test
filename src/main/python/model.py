@@ -15,22 +15,26 @@ class ModelTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
-        s_initial = batch_data["s"][0]
+        warmup_steps = batch_data["warmup_steps"]
+        loss = 0.
         for i in range(batch_data["seq_len"] - 1):
+            s_in = batch_data["s"][i]
+            y = batch_data["s"][i + 1]
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
                 logits, out, recurrent_state = self.nn_module.forward(
-                    s_initial, None, force_0, force_1, first_iteration=True
+                    s_in, None, force_0, force_1, first_iteration=True
                 )
             else:
                 logits, out, recurrent_state = self.nn_module.forward(
-                    None, recurrent_state, force_0, force_1, first_iteration=False
+                    s_in, recurrent_state, force_0, force_1, first_iteration=False
                 )
-            y = batch_data["s"][i + 1]
-            loss = self.criterion(
-                logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
-            )
+            # Only compute loss if warmed up.
+            if i > warmup_steps - 1:
+                loss += self.criterion(
+                    logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
+                )
         return loss
 
 
@@ -184,7 +188,7 @@ class Model(nn.Module):
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
     def forward(
-        self, s_initial, last_recurrent_state, force_0, force_1, first_iteration=False
+        self, s_in, last_recurrent_state, force_0, force_1, first_iteration=False
     ):
 
         out_force_recurrent = self.layer_force_recurrent(
@@ -195,24 +199,21 @@ class Model(nn.Module):
         # use the learned self.init_recurrent_tate parameter as the initial recurrent state.
         # Only feed through the initial frame on the first iteration since the model must
         # rely on latent state to predict future outputs..
+        x = s_in
+        out_cnn_0 = self.layer_cnn_0(x)
+        out_cnn_1 = self.layer_cnn_1(out_cnn_0)
+        out_cnn_2 = self.layer_cnn_2(out_cnn_1)
+        out_cnn_3 = self.layer_cnn_3(out_cnn_2)
+        out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
+        out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
         if first_iteration:
-            x = s_initial
-            out_cnn_0 = self.layer_cnn_0(x)
-            out_cnn_1 = self.layer_cnn_1(out_cnn_0)
-            out_cnn_2 = self.layer_cnn_2(out_cnn_1)
-            out_cnn_3 = self.layer_cnn_3(out_cnn_2)
-            out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
-            out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
-            # Combine outputs from CNN layer, init recurrent state and force layer.
-            combined = torch.add(out_cnn_recurrent, out_force_recurrent)
-            out_recurrent, out_recurrent_state = self.layer_recurrent(
-                combined.view(1, 1, -1), self.init_recurrent_state
-            )
-        else:
-            # Combine outputs from previous recurrent state and force layer.
-            out_recurrent, out_recurrent_state = self.layer_recurrent(
-                out_force_recurrent.view(1, 1, -1), last_recurrent_state
-            )
+            last_recurrent_state = self.init_recurrent_state
+
+        # Combine outputs from previous recurrent state and force layer.
+        combined = torch.add(out_cnn_recurrent, out_force_recurrent)
+        out_recurrent, out_recurrent_state = self.layer_recurrent(
+            combined.view(1, 1, -1), last_recurrent_state
+        )
         out_image_flat_hidden = self.layer_recurrent_out(out_recurrent)
 
         out_image_hidden = out_image_flat_hidden.view(
