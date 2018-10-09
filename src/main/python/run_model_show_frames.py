@@ -17,24 +17,24 @@ def run_model_show_frames():
         batch_data = {"force": data[0], "s": data[1], "seq_len": SEQ_LEN}
         s = data[1]
         y1_list = []
-        s_initial = batch_data["s"][0]
+        s_in = batch_data["s"][0]
         for i in range(SEQ_LEN - 1):
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
-                logits, y1, recurrent_state, out_cnn_recurrent = model.forward(
-                    s_initial, None, None, force_0, force_1, first_iteration=True
+                logits, y1, recurrent_state = model.forward(
+                    s_in, None, force_0, force_1, first_iteration=True
                 )
             else:
-                logits, y1, recurrent_state, out_cnn_recurrent = model.forward(
-                    None,
+                logits, y1, recurrent_state = model.forward(
+                    s_in,
                     recurrent_state,
-                    out_cnn_recurrent,
                     force_0,
                     force_1,
                     first_iteration=False,
                 )
             y1_list.append(y1)
+            s_in = y1
         for seq_idx in range(SEQ_LEN - 1):
             for i in range(4):
                 s0_frame = s[seq_idx + 1][0, :, :, :, i].data.numpy()

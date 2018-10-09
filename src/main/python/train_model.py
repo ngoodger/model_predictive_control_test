@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
-SEQ_LEN = 2
+SEQ_LEN = 4
 SAVE_INTERVAL = 1000
 
 
@@ -104,7 +104,7 @@ def tune_hyperparam():
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 1e-3, "batch_size": 1}
+    space = {"learning_rate": 1e-4, "batch_size": 1}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 
