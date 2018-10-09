@@ -3,7 +3,7 @@ import block_sys as bs
 import torch
 from torch.utils.data import DataLoader
 
-SEQ_LEN = 10
+SEQ_LEN = 4
 
 
 def run_model_show_frames():
@@ -22,12 +22,17 @@ def run_model_show_frames():
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
-                logits, y1, recurrent_state = model.forward(
-                    s_initial, None, force_0, force_1, first_iteration=True
+                logits, y1, recurrent_state, out_cnn_recurrent = model.forward(
+                    s_initial, None, None, force_0, force_1, first_iteration=True
                 )
             else:
-                logits, y1, recurrent_state = model.forward(
-                    None, recurrent_state, force_0, force_1, first_iteration=False
+                logits, y1, recurrent_state, out_cnn_recurrent = model.forward(
+                    None,
+                    recurrent_state,
+                    out_cnn_recurrent,
+                    force_0,
+                    force_1,
+                    first_iteration=False,
                 )
             y1_list.append(y1)
         for seq_idx in range(SEQ_LEN - 1):

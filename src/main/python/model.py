@@ -20,12 +20,17 @@ class ModelTrainer(trainer.BaseTrainer):
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
-                logits, out, recurrent_state = self.nn_module.forward(
-                    s_initial, None, force_0, force_1, first_iteration=True
+                logits, out, recurrent_state, out_cnn_recurrent = self.nn_module.forward(
+                    s_initial, None, None, force_0, force_1, first_iteration=True
                 )
             else:
-                logits, out, recurrent_state = self.nn_module.forward(
-                    None, recurrent_state, force_0, force_1, first_iteration=False
+                logits, out, recurrent_state, out_cnn_recurrent = self.nn_module.forward(
+                    None,
+                    recurrent_state,
+                    out_cnn_recurrent,
+                    force_0,
+                    force_1,
+                    first_iteration=False,
                 )
             y = batch_data["s"][i + 1]
             loss = self.criterion(
@@ -184,7 +189,13 @@ class Model(nn.Module):
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
     def forward(
-        self, s_initial, last_recurrent_state, force_0, force_1, first_iteration=False
+        self,
+        s_initial,
+        last_recurrent_state,
+        out_cnn_recurrent,
+        force_0,
+        force_1,
+        first_iteration=False,
     ):
 
         out_force_recurrent = self.layer_force_recurrent(
@@ -203,16 +214,13 @@ class Model(nn.Module):
             out_cnn_3 = self.layer_cnn_3(out_cnn_2)
             out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
             out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
-            # Combine outputs from CNN layer, init recurrent state and force layer.
-            combined = torch.add(out_cnn_recurrent, out_force_recurrent)
-            out_recurrent, out_recurrent_state = self.layer_recurrent(
-                combined.view(1, 1, -1), self.init_recurrent_state
-            )
-        else:
-            # Combine outputs from previous recurrent state and force layer.
-            out_recurrent, out_recurrent_state = self.layer_recurrent(
-                out_force_recurrent.view(1, 1, -1), last_recurrent_state
-            )
+            last_recurrent_state = self.init_recurrent_state
+
+        # Combine outputs from previous recurrent state and force layer.
+        combined = torch.add(out_cnn_recurrent, out_force_recurrent)
+        out_recurrent, out_recurrent_state = self.layer_recurrent(
+            combined.view(1, 1, -1), last_recurrent_state
+        )
         out_image_flat_hidden = self.layer_recurrent_out(out_recurrent)
 
         out_image_hidden = out_image_flat_hidden.view(
@@ -227,4 +235,4 @@ class Model(nn.Module):
         out_tcnn_2 = self.layer_tcnn_2(out_tcnn_1)
         out_logits = self.layer_tcnn_3(out_tcnn_2)
         out_sigmoid = self.layer_sigmoid_out(out_logits)
-        return (out_logits, out_sigmoid, out_recurrent_state)
+        return (out_logits, out_sigmoid, out_recurrent_state, out_cnn_recurrent)
