@@ -15,8 +15,11 @@ class ModelTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
+        warmup_steps = batch_data["warmup_steps"]
+        loss = 0.
         for i in range(batch_data["seq_len"] - 1):
             s_in = batch_data["s"][i]
+            y = batch_data["s"][i + 1]
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
@@ -31,10 +34,11 @@ class ModelTrainer(trainer.BaseTrainer):
                     force_1,
                     first_iteration=False,
                 )
-            y = batch_data["s"][i + 1]
-            loss = self.criterion(
-                logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
-            )
+            # Only compute loss if warmed up.
+            if i > warmup_steps - 1:
+                loss += self.criterion(
+                    logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
+                )
         return loss
 
 

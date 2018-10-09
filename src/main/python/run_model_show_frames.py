@@ -17,8 +17,8 @@ def run_model_show_frames():
         batch_data = {"force": data[0], "s": data[1], "seq_len": SEQ_LEN}
         s = data[1]
         y1_list = []
-        s_in = batch_data["s"][0]
         for i in range(SEQ_LEN - 1):
+            s_in = batch_data["s"][i]
             force_0 = batch_data["force"][i]
             force_1 = batch_data["force"][i + 1]
             if i == 0:
@@ -34,19 +34,19 @@ def run_model_show_frames():
                     first_iteration=False,
                 )
             y1_list.append(y1)
-            s_in = y1
+            #s_in = y1
         for seq_idx in range(SEQ_LEN - 1):
             for i in range(4):
                 s0_frame = s[seq_idx + 1][0, :, :, :, i].data.numpy()
                 bs.render(
                     s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
-                    "_{}_{}".format(str(seq_idx + 1), str(i)),
+                    "_{}_{}".format(str(seq_idx), str(i) + "_target"),
                 )
             for i in range(bs.FRAMES):
                 y1_frame = y1_list[seq_idx][0, :, :, :, i].data.numpy()
                 bs.render(
                     y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
-                    "_{}_{}".format(str(seq_idx), str(i)),
+                    "_{}_{}".format(str(seq_idx), str(i) + "_out"),
                 )
 
 

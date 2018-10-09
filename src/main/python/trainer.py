@@ -47,3 +47,4 @@ class BaseTrainer(object):
         self.optimizer.step()
         self.iteration += 1
         return loss.data[0]
+        return None
