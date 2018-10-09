@@ -28,7 +28,8 @@ class ModelDataSet(Dataset):
         self.my_block_sys.reset()
         force = []
         s = []
-        for seq_idx in range(self.seq_len):
+        # Generate seq_len + 1 quad frames since minimum 2 (input + label).
+        for seq_idx in range(self.seq_len + 1):
             s_item = np.zeros(
                 [IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32
             )
