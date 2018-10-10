@@ -2,11 +2,13 @@ import torch
 import trainer
 from block_sys import GRID_SIZE, IMAGE_DEPTH, FORCE_SCALE
 from torch import nn
+from model import forward_sequence
 
 LOSS_MEAN_WINDOW = 100000
 PRINT_LOSS_MEAN_ITERATION = 100
 
 STRIDE = 2
+TARGET_HORIZON = 3
 
 
 class PolicyTrainer(trainer.BaseTrainer):
@@ -19,13 +21,14 @@ class PolicyTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
-        force_1 = self.nn_module.forward(batch_data)
-        # Augment batch data with force from policy
-        batch_data["force_1"] = force_1 * FORCE_SCALE * 0.5
-        logits, out = self.model.forward(batch_data)
-        # Loss is only relative to the final frame.
-        # We just want zero velocity at the goal.  We don't care how we get there.
-        logits_last_frame = logits[:, :, :, :, 3]
+        for i in range(TARGET_HORIZON):
+            force_1 = self.nn_module.forward(batch_data)
+            # Augment batch data with force from policy
+            batch_data["force_1"] = force_1 * FORCE_SCALE * 0.5
+            logits, out = self.model.forward(batch_data)
+            # Loss is only relative to the final frame.
+            # We just want zero velocity at the goal.  We don't care how we get there.
+            logits_last_frame = logits[:, :, :, :, 3]
         y = batch_data["s1"]
         logits_flat = logits_last_frame.reshape([logits_last_frame.size(0), -1])
         y_flat = y.reshape([y.size(0), -1])

@@ -10,10 +10,10 @@ STRIDE = 2
 def forward_sequence(model, batch_data, use_label_output=False):
     logits_list = []
     out_list = []
-    s_in = batch_data["s"][0]
+    s_in = batch_data["observations"][0]
     for i in range(batch_data["seq_len"] - 1):
-        force_0 = batch_data["force"][i]
-        force_1 = batch_data["force"][i + 1]
+        force_0 = batch_data["forces"][i]
+        force_1 = batch_data["forces"][i + 1]
         if i == 0:
             logits, out, recurrent_state = model.forward(
                 s_in, None, force_0, force_1, first_iteration=True
@@ -23,7 +23,7 @@ def forward_sequence(model, batch_data, use_label_output=False):
                 s_in, recurrent_state, force_0, force_1, first_iteration=False
             )
         if use_label_output:
-            s_in = batch_data["s"][i + 1]
+            s_in = batch_data["observations"][i + 1]
         else:
             s_in = out
         out_list.append(out)
@@ -47,7 +47,9 @@ class ModelTrainer(trainer.BaseTrainer):
         loss = sum(
             self.criterion(
                 logits_list[i].reshape([logits_list[i].size(0), -1]),
-                batch_data["s"][i + 1].reshape([batch_data["s"][i + 1].size(0), -1]),
+                batch_data["observations"][i + 1].reshape(
+                    [batch_data["observations"][i + 1].size(0), -1]
+                ),
             )
             for i in range(batch_data["seq_len"] - 1)
         )

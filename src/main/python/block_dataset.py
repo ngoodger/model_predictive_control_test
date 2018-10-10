@@ -26,27 +26,27 @@ class ModelDataSet(Dataset):
     def __getitem__(self, idx):
         seed(idx)
         self.my_block_sys.reset()
-        force = []
-        s = []
+        forces = []
+        observations = []
         # Generate seq_len + 1 quad frames since minimum 2 (input + label).
         for seq_idx in range(self.seq_len + 1):
-            s_item = np.zeros(
+            observation_item = np.zeros(
                 [IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32
             )
             force_item = np.zeros([2], dtype=np.float32)
             force_item[:] = self._random_force()
             # Collect 4 frames
             for i in range(FRAMES):
-                s_item[0, :, :, i] = (
+                observation_item[0, :, :, i] = (
                     self.my_block_sys.step(
                         FORCE_SCALE * force_item[0], FORCE_SCALE * force_item[1]
                     )
                     - MEAN_S0
                 )
-            force.append(force_item)
-            s.append(s_item)
+            forces.append(force_item)
+            observations.append(observation_item)
 
-        return (force, s)
+        return (forces, observations)
 
 
 class PolicyDataSet(Dataset):
