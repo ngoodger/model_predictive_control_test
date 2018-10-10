@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
-SEQ_LEN = 4
+SEQ_LEN = 6
 SAVE_INTERVAL = 1000
 
 
