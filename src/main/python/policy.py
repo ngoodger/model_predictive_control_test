@@ -2,7 +2,8 @@ import torch
 import trainer
 from block_sys import GRID_SIZE, IMAGE_DEPTH, FORCE_SCALE
 from torch import nn
-from model import forward_sequence
+
+# from model import forward_sequence
 
 LOSS_MEAN_WINDOW = 100000
 PRINT_LOSS_MEAN_ITERATION = 100
