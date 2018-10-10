@@ -6,6 +6,31 @@ from torch import nn
 STRIDE = 2
 
 
+# Can not easily add as model function because it is not supported by data parallel.
+def forward_sequence(model, batch_data, use_label_output=False):
+    logits_list = []
+    out_list = []
+    s_in = batch_data["s"][0]
+    for i in range(batch_data["seq_len"] - 1):
+        force_0 = batch_data["force"][i]
+        force_1 = batch_data["force"][i + 1]
+        if i == 0:
+            logits, out, recurrent_state = model.forward(
+                s_in, None, force_0, force_1, first_iteration=True
+            )
+        else:
+            logits, out, recurrent_state = model.forward(
+                s_in, recurrent_state, force_0, force_1, first_iteration=False
+            )
+        if use_label_output:
+            s_in = batch_data["s"][i + 1]
+        else:
+            s_in = out
+        out_list.append(out)
+        logits_list.append(logits)
+    return logits_list, out_list
+
+
 class ModelTrainer(trainer.BaseTrainer):
     def __init__(self, learning_rate, model):
         super(ModelTrainer, self).__init__(learning_rate, model)
@@ -15,26 +40,17 @@ class ModelTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
-        warmup_steps = batch_data["warmup_steps"]
         loss = 0.
-        for i in range(batch_data["seq_len"] - 1):
-            s_in = batch_data["s"][i]
-            y = batch_data["s"][i + 1]
-            force_0 = batch_data["force"][i]
-            force_1 = batch_data["force"][i + 1]
-            if i == 0:
-                logits, out, recurrent_state = self.nn_module.forward(
-                    s_in, None, force_0, force_1, first_iteration=True
-                )
-            else:
-                logits, out, recurrent_state = self.nn_module.forward(
-                    s_in, recurrent_state, force_0, force_1, first_iteration=False
-                )
-            # Only compute loss if warmed up.
-            if i > warmup_steps - 1:
-                loss += self.criterion(
-                    logits.reshape([logits.size(0), -1]), y.reshape([y.size(0), -1])
-                )
+        logits_list, _ = forward_sequence(
+            self.nn_module, batch_data, use_label_output=True
+        )
+        loss = sum(
+            self.criterion(
+                logits_list[i].reshape([logits_list[i].size(0), -1]),
+                batch_data["s"][i + 1].reshape([batch_data["s"][i + 1].size(0), -1]),
+            )
+            for i in range(batch_data["seq_len"] - 1)
+        )
         return loss
 
 

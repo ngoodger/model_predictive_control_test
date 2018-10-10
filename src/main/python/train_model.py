@@ -55,9 +55,7 @@ def objective(space, time_limit=TRAINING_TIME):
     for batch_idx, data in enumerate(dataloader):
         force = data[0]
         s = data[1]
-        loss = trainer.train(
-            {"s": s, "force": force, "seq_len": SEQ_LEN, "warmup_steps": 0}
-        )
+        loss = trainer.train({"s": s, "force": force, "seq_len": SEQ_LEN})
         if iteration % 100 == 0:
             writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()

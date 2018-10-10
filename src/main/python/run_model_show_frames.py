@@ -2,35 +2,22 @@ import block_dataset
 import block_sys as bs
 import torch
 from torch.utils.data import DataLoader
+from model import forward_sequence
 
-SEQ_LEN = 4
+SEQ_LEN = 10
 
 
 def run_model_show_frames():
-    TEST_EXAMPLES = 10
+    TEST_EXAMPLES = 1
 
     # Use cpu for inference.
     samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES, SEQ_LEN)
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
     model = torch.load("my_model.pt")
     for batch_idx, data in enumerate(dataloader):
-        batch_data = {"force": data[0], "s": data[1], "seq_len": SEQ_LEN}
         s = data[1]
-        y1_list = []
-        for i in range(SEQ_LEN - 1):
-            s_in = batch_data["s"][i]
-            force_0 = batch_data["force"][i]
-            force_1 = batch_data["force"][i + 1]
-            if i == 0:
-                logits, y1, recurrent_state = model.forward(
-                    s_in, None, force_0, force_1, first_iteration=True
-                )
-            else:
-                logits, y1, recurrent_state = model.forward(
-                    s_in, recurrent_state, force_0, force_1, first_iteration=False
-                )
-            y1_list.append(y1)
-            # s_in = y1
+        batch_data = {"force": data[0], "s": s, "seq_len": SEQ_LEN}
+        _, y1_list = forward_sequence(model, batch_data)
         for seq_idx in range(SEQ_LEN - 1):
             for i in range(4):
                 s0_frame = s[seq_idx + 1][0, :, :, :, i].data.numpy()
