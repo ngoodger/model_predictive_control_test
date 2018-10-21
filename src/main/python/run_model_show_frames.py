@@ -15,12 +15,16 @@ def run_model_show_frames():
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
     model = torch.load("my_model.pt")
     for batch_idx, data in enumerate(dataloader):
-        s = data[1]
-        batch_data = {"force": data[0], "s": s, "seq_len": SEQ_LEN}
+        forces, observations = data
+        batch_data = {
+            "forces": forces,
+            "observations": observations,
+            "seq_len": SEQ_LEN,
+        }
         _, y1_list = forward_sequence(model, batch_data)
         for seq_idx in range(SEQ_LEN - 1):
             for i in range(4):
-                s0_frame = s[seq_idx + 1][0, :, :, :, i].data.numpy()
+                s0_frame = observations[seq_idx + 1][0, :, :, :, i].data.numpy()
                 bs.render(
                     s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
                     "_{}_{}".format(str(seq_idx), str(i) + "_target"),

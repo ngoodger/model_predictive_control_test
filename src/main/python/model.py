@@ -2,30 +2,40 @@ import torch
 import trainer
 from block_sys import GRID_SIZE, IMAGE_DEPTH
 from torch import nn
+import inspect
+import hashlib
 
 STRIDE = 2
+LSTM_DEPTH = 2
+
+
+def hash_model():
+    print(__name__)
+    module_src_code = inspect.getsource(__import__(__name__)).encode("utf-8")
+    print(module_src_code)
+    return hashlib.sha256(module_src_code).hexdigest()
 
 
 # Can not easily add as model function because it is not supported by data parallel.
 def forward_sequence(model, batch_data, use_label_output=False):
     logits_list = []
     out_list = []
-    s_in = batch_data["observations"][0]
+    observation = batch_data["observations"][0]
     for i in range(batch_data["seq_len"] - 1):
         force_0 = batch_data["forces"][i]
         force_1 = batch_data["forces"][i + 1]
         if i == 0:
             logits, out, recurrent_state = model.forward(
-                s_in, None, force_0, force_1, first_iteration=True
+                observation, None, force_0, force_1, first_iteration=True
             )
         else:
             logits, out, recurrent_state = model.forward(
-                s_in, recurrent_state, force_0, force_1, first_iteration=False
+                observation, recurrent_state, force_0, force_1, first_iteration=False
             )
         if use_label_output:
-            s_in = batch_data["observations"][i + 1]
+            observation = batch_data["observations"][i + 1]
         else:
-            s_in = out
+            observation = out
         out_list.append(out)
         logits_list.append(logits)
     return logits_list, out_list
@@ -88,10 +98,10 @@ class Model(nn.Module):
         self.recurrent_layer_size = recurrent_layer_size
         self.init_recurrent_state = (
             torch.nn.Parameter(
-                torch.rand(2, 1, middle_hidden_layer_size), requires_grad=True
+                torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
             ),
             torch.nn.Parameter(
-                torch.rand(2, 1, middle_hidden_layer_size), requires_grad=True
+                torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
             ),
         )
         LAYERS = 4
@@ -201,12 +211,12 @@ class Model(nn.Module):
             nn.Linear(middle_hidden_layer_size, middle_layer_size), nn.LeakyReLU()
         )
         self.layer_recurrent = nn.LSTM(
-            middle_hidden_layer_size, middle_hidden_layer_size, 2
+            middle_hidden_layer_size, middle_hidden_layer_size, LSTM_DEPTH
         )
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
 
     def forward(
-        self, s_in, last_recurrent_state, force_0, force_1, first_iteration=False
+        self, observation, last_recurrent_state, force_0, force_1, first_iteration=False
     ):
 
         out_force_recurrent = self.layer_force_recurrent(
@@ -217,7 +227,7 @@ class Model(nn.Module):
         # use the learned self.init_recurrent_tate parameter as the initial recurrent state.
         # Only feed through the initial frame on the first iteration since the model must
         # rely on latent state to predict future outputs..
-        x = s_in
+        x = observation
         out_cnn_0 = self.layer_cnn_0(x)
         out_cnn_1 = self.layer_cnn_1(out_cnn_0)
         out_cnn_2 = self.layer_cnn_2(out_cnn_1)

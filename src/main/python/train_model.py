@@ -42,7 +42,7 @@ def objective(space, time_limit=TRAINING_TIME):
         layer_4_kernel_size=3,
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
-        recurrent_layer_size=32,
+        recurrent_layer_size=128,
     )
     if os.path.exists(MODEL_PATH):
         model0 = torch.load(MODEL_PATH)

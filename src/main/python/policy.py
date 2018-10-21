@@ -3,13 +3,8 @@ import trainer
 from block_sys import GRID_SIZE, IMAGE_DEPTH, FORCE_SCALE
 from torch import nn
 
-# from model import forward_sequence
-
-LOSS_MEAN_WINDOW = 100000
-PRINT_LOSS_MEAN_ITERATION = 100
-
-STRIDE = 2
 TARGET_HORIZON = 3
+STRIDE = 2
 
 
 class PolicyTrainer(trainer.BaseTrainer):
@@ -22,16 +17,22 @@ class PolicyTrainer(trainer.BaseTrainer):
         return criterion
 
     def get_loss(self, batch_data):
+        force_0 = batch_data["force_0"]
+        start = batch_data["start"]
+        y = batch_data["target"]
         for i in range(TARGET_HORIZON):
-            force_1 = self.nn_module.forward(batch_data)
-            # Augment batch data with force from policy
-            batch_data["force_1"] = force_1 * FORCE_SCALE * 0.5
-            logits, out = self.model.forward(batch_data)
-            # Loss is only relative to the final frame.
-            # We just want zero velocity at the goal.  We don't care how we get there.
-            logits_last_frame = logits[:, :, :, :, 3]
-        y = batch_data["s1"]
-        logits_flat = logits_last_frame.reshape([logits_last_frame.size(0), -1])
+            if i == 0:
+                force_1 = self.nn_module.forward(force_0, start) * FORCE_SCALE * 0.5
+                logits, out, recurrent_state = self.model.forward(
+                    start, None, force_0, force_1, first_iteration=True
+                )
+            else:
+                force_1 = self.nn_module.forward(force_0, out) * FORCE_SCALE * 0.5
+                logits, out, recurrent_state = self.model.forward(
+                    out, recurrent_state, force_0, force_1, first_iteration=False
+                )
+            force_0 = force_1
+        logits_flat = logits.reshape([logits.size(0), -1])
         y_flat = y.reshape([y.size(0), -1])
         loss = self.criterion(logits_flat, y_flat)
         return loss
@@ -55,6 +56,7 @@ class Policy(nn.Module):
         force_add determines whether the force is added or concatonated.
         """
 
+        super(Policy, self).__init__()
         self.layer_1_cnn_filters = layer_1_cnn_filters
         self.layer_2_cnn_filters = layer_2_cnn_filters
         self.layer_3_cnn_filters = layer_3_cnn_filters
@@ -63,18 +65,15 @@ class Policy(nn.Module):
         self.layer_2_kernel_size = layer_2_kernel_size
         self.layer_3_kernel_size = layer_3_kernel_size
         self.layer_4_kernel_size = layer_4_kernel_size
-        self.force_hidden_layer_size = force_hidden_layer_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
+
         LAYERS = 4
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
         middle_layer_size = int(
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
         )
         self.middle_layer_size = middle_layer_size
-        print(self.middle_layer_image_width)
-        print(self.middle_layer_size)
-        super(Policy, self).__init__()
-        self.layer1 = nn.Sequential(
+        self.layer_cnn_0 = nn.Sequential(
             nn.Conv3d(
                 IMAGE_DEPTH,
                 layer_1_cnn_filters,
@@ -85,7 +84,7 @@ class Policy(nn.Module):
             # nn.BatchNorm2d(2),
             nn.LeakyReLU(),
         )
-        self.layer2 = nn.Sequential(
+        self.layer_cnn_1 = nn.Sequential(
             nn.Conv3d(
                 layer_1_cnn_filters,
                 layer_2_cnn_filters,
@@ -96,7 +95,7 @@ class Policy(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer3 = nn.Sequential(
+        self.layer_cnn_2 = nn.Sequential(
             nn.Conv3d(
                 layer_2_cnn_filters,
                 layer_3_cnn_filters,
@@ -107,7 +106,7 @@ class Policy(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer4 = nn.Sequential(
+        self.layer_cnn_3 = nn.Sequential(
             nn.Conv3d(
                 layer_3_cnn_filters,
                 layer_4_cnn_filters,
@@ -118,41 +117,43 @@ class Policy(nn.Module):
             # nn.BatchNorm2d(4),
             nn.LeakyReLU(),
         )
-        self.layer_force_0 = nn.Sequential(
-            nn.Linear(2, middle_layer_size), nn.LeakyReLU()
+        self.layer_tcnn_0 = nn.Sequential(
+            nn.ConvTranspose3d(
+                layer_4_cnn_filters,
+                layer_3_cnn_filters,
+                kernel_size=layer_4_kernel_size,
+                stride=[STRIDE, STRIDE, STRIDE],
+                padding=int(layer_4_kernel_size / 3),
+                output_padding=[1, 1, 1],
+            ),
+            # nn.BatchNorm2d(4),
+            nn.LeakyReLU(),
         )
-
-        self.layer_middle_0 = nn.Sequential(
+        self.layer_force = nn.Sequential(
+            nn.Linear(2, middle_hidden_layer_size), nn.LeakyReLU()
+        )
+        self.layer_cnn = nn.Sequential(
             nn.Linear(middle_layer_size, middle_hidden_layer_size), nn.LeakyReLU()
         )
-        self.layer_middle_1 = nn.Sequential(
+        self.layer_policy_hidden = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
             nn.LeakyReLU(),
         )
-        self.layer_middle_2 = nn.Sequential(
-            nn.Linear(middle_hidden_layer_size, 2), nn.Tanh()
-        )
+        self.layer_policy = nn.Linear(middle_hidden_layer_size, 2)
 
-    def forward(self, batch_data):
-        x = batch_data["s0"]
-        x_force_0 = batch_data["force_0"]
-        print_shape = False
-        out_force = self.layer_force_0(x_force_0)
-        out1 = self.layer1(x)
-        if print_shape:
-            print(out1.shape)
-        out2 = self.layer2(out1)
-        if print_shape:
-            print(out2.shape)
-        out3 = self.layer3(out2)
-        if print_shape:
-            print(out3.shape)
-        out4 = self.layer4(out3)
-        if print_shape:
-            print(out4.shape)
-        out4_flat = out4.view(out4.size(0), -1)
-        out_middle_0 = self.layer_middle_0(torch.add(out4_flat, out_force))
-        # Add block force.
-        out_combined = self.layer_middle_1(out_middle_0)
-        out = self.layer_middle_2(out_combined)
-        return out
+    def forward(self, force_0, start, first_iteration=False):
+
+        out_force = self.layer_force(force_0)
+
+        out_cnn_0 = self.layer_cnn_0(start)
+        out_cnn_1 = self.layer_cnn_1(out_cnn_0)
+        out_cnn_2 = self.layer_cnn_2(out_cnn_1)
+        out_cnn_3 = self.layer_cnn_3(out_cnn_2)
+        out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
+        out_cnn = self.layer_cnn(out_input_image_flat)
+
+        # Combine outputs from cnn and force layers
+        combined = torch.add(out_cnn, out_force)
+        out_policy_hidden = self.layer_policy_hidden(combined.view(1, -1))
+        out_policy = self.layer_policy(out_policy_hidden)
+        return out_policy

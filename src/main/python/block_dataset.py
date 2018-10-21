@@ -53,12 +53,7 @@ class PolicyDataSet(Dataset):
     def __init__(self, size):
         super(PolicyDataSet, self).__init__()
         self.my_block_sys = bs.BlockSys()
-        self.s0 = np.zeros(
-            [IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32
-        )
         # Only one frame is used as target.
-        self.s1 = np.zeros([IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 1], dtype=np.float32)
-        self.force_0 = np.zeros([2], dtype=np.float32)
         self.size = size
 
     def __len__(self):
@@ -70,13 +65,16 @@ class PolicyDataSet(Dataset):
 
     def __getitem__(self, idx):
         seed(idx)
+        start = np.zeros([IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
+        target = np.zeros([IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
+        force_0 = np.zeros([2], dtype=np.float32)
         self.my_block_sys.reset()
         # Collect 4 initial frames (s0)
-        self.force_0[:] = self._random_force()
+        force_0[:] = self._random_force()
         for i in range(FRAMES):
-            self.s0[0, :, :, i] = (
+            start[0, :, :, i] = (
                 self.my_block_sys.step(
-                    FORCE_SCALE * self.force_0[0], FORCE_SCALE * self.force_0[1]
+                    FORCE_SCALE * force_0[0], FORCE_SCALE * force_0[1]
                 )
                 - MEAN_S0
             )
@@ -85,6 +83,10 @@ class PolicyDataSet(Dataset):
         # But data generation parallelized we don't care until our cpu is
         # fully utilized.
         self.my_block_sys.reset()
-        self.s1[0, :, :, 0] = self.my_block_sys.step(0., 0.)
+        frame = self.my_block_sys.step(0., 0.)
+        target[0, :, :, 0] = frame
+        target[0, :, :, 1] = frame
+        target[0, :, :, 2] = frame
+        target[0, :, :, 3] = frame
 
-        return (self.force_0, self.s0, self.s1)
+        return (force_0, start, target)

@@ -41,19 +41,16 @@ def objective(space, time_limit=TRAINING_TIME):
         learning_rate=learning_rate, policy=policy0, model=model
     )
     iteration = 0
-    start = datetime.now()
+    start_time = datetime.now()
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
-        force_0_batch = data[0].to(device)
-        s0_batch = data[1].to(device)
-        s1_batch = data[2].to(device)
-        trainer.train({"s0": s0_batch, "s1": s1_batch, "force_0": force_0_batch})
-        # print(y1)
-        if iteration % 1000 == 0:
+        force_0, start, target = data
+        trainer.train({"start": start, "target": target, "force_0": force_0})
+        if iteration % 100 == 0:
             elapsed = datetime.now()
-            elapsed = elapsed - start
+            elapsed = elapsed - start_time
             print("Time:" + str(elapsed))
-            start = datetime.now()
+            start_time = datetime.now()
         iteration += 1
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:
@@ -63,8 +60,8 @@ def objective(space, time_limit=TRAINING_TIME):
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 1e-3, "batch_size": 1}
-    my_policy = objective(space, timedelta(hours=1))
+    space = {"learning_rate": 1e-4, "batch_size": 1}
+    my_policy = objective(space, timedelta(hours=24))
     torch.save(my_policy, POLICY_PATH)
     # model = torch.load('my_model.pt')
 
