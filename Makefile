@@ -29,9 +29,6 @@ run_policy_show_frames:
 build_image:
 	docker build . -t mpc_test
 
-push_image_gke:
+push_image_gke: build_image
 	docker tag mpc_test gcr.io/t-pulsar-217904/mpc_test
 	docker push gcr.io/t-pulsar-217904/mpc_test
-
-train_model_docker:
-	docker run -p 6006:6006 -it gcr.io/t-pulsar-217904/mpc_test /bin/bash -c "make train_model & tensorboard --logdir log_files"

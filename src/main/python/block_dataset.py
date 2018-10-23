@@ -10,11 +10,12 @@ MEAN_S0 = 0.
 
 
 class ModelDataSet(Dataset):
-    def __init__(self, size, seq_len):
+    def __init__(self, size, seq_len, random_seed):
         super(ModelDataSet, self).__init__()
         self.my_block_sys = bs.BlockSys()
         self.size = size
         self.seq_len = seq_len
+        seed(random_seed)
 
     def __len__(self):
         return self.size
@@ -24,7 +25,6 @@ class ModelDataSet(Dataset):
         return force
 
     def __getitem__(self, idx):
-        seed(idx)
         self.my_block_sys.reset()
         forces = []
         observations = []

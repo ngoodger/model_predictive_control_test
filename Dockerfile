@@ -1,7 +1,10 @@
 FROM ubuntu:16.04
-ADD . /project
-WORKDIR /project
 RUN apt-get update 
 RUN apt-get install -y python3-pip make
 RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+ADD ./requirements.txt /project/requirements.txt
+RUN pip3 install -r /project/requirements.txt
+WORKDIR /project
+ADD ./src /project/src
+ADD ./Makefile /project/
+ENTRYPOINT ["python3", "/project/src/main/python/train_model.py"]

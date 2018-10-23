@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 import numpy as np
 from torch import optim
+import torch.distributed as dist
 
 LOSS_MEAN_WINDOW = 1000
 PRINT_LOSS_MEAN_ITERATION = 100
@@ -19,6 +20,7 @@ class BaseTrainer(object):
         self.running_loss_idx = 0
         self.criterion = self.get_criterion()
         self.loss_mean_full = False
+        self.world_size = float(dist.get_world_size())
         print(self.nn_module)
 
     @abstractmethod
@@ -30,6 +32,11 @@ class BaseTrainer(object):
     def get_loss(self, batch_data):
         # Should return torch loss object.
         pass
+
+    def average_gradients(self):
+        for param in self.nn_module.parameters():
+            dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM, group=0)
+            param.grad.data /= self.world_size
 
     def train(self, batch_data):
         self.optimizer.zero_grad()
@@ -44,6 +51,7 @@ class BaseTrainer(object):
         mean_loss = np.sum(self.running_loss) / LOSS_MEAN_WINDOW
         if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0 and self.loss_mean_full:
             print("loss: {}".format(mean_loss))
+        self.average_gradients()
         self.optimizer.step()
         self.iteration += 1
         return loss.data[0]
