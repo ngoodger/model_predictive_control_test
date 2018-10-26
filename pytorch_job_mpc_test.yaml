@@ -15,8 +15,10 @@ spec:
             imagePullPolicy: IfNotPresent
             name: pytorch
             resources:
-            limits:
-              nvidia.com/gpu: 1
+              limits:
+                cpu: "1"
+              requests:
+                cpu: "1"
           restartPolicy: OnFailure
     - replicas: 1
       replicaType: WORKER
@@ -27,6 +29,8 @@ spec:
             imagePullPolicy: IfNotPresent
             name: pytorch
             resources:
-            limits:
-              nvidia.com/gpu: 1
+              limits:
+                cpu: "1"
+              requests:
+                cpu: "1"
           restartPolicy: OnFailure
