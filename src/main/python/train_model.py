@@ -1,6 +1,7 @@
 # import os.path
 from datetime import datetime, timedelta
-from tensorboardX import SummaryWriter
+
+# from tensorboardX import SummaryWriter
 import torch.distributed as dist
 
 # import block_sys
@@ -24,7 +25,7 @@ SAVE_INTERVAL = 1000
 def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
-    writer = SummaryWriter("log_files/")
+    # writer = SummaryWriter("log_files/")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     samples_dataset = block_dataset.ModelDataSet(
         TRAINING_ITERATIONS, SEQ_LEN, dist.get_rank()
@@ -63,7 +64,7 @@ def objective(space, time_limit=TRAINING_TIME):
         }
         loss = trainer.train(batch_data)
         if iteration % 100 == 0 and dist.get_rank() == 0:
-            writer.add_scalar("Train/Loss", loss, batch_idx)
+            # writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()
             elapsed = elapsed - start
             print(
