@@ -85,8 +85,8 @@ def objective(space, time_limit=TRAINING_TIME):
 
 
 if __name__ == "__main__":
-    dist.init_process_group("gloo")
-    space = {"learning_rate": 1e-4, "batch_size": 32}
+    dist.init_process_group("tcp")
+    space = {"learning_rate": 1e-4, "batch_size": 1}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 

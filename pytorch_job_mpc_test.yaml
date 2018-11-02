@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v2"
+  name: "pytorch-tcp-dist-mpc-test-v6"
 spec:
   backend: "gloo"
   masterPort: "23456"
@@ -16,9 +16,7 @@ spec:
             name: pytorch
             resources:
               limits:
-                cpu: "1"
-              requests:
-                cpu: "1"
+                nvidia.com/gpu: 1
           restartPolicy: OnFailure
     - replicas: 1
       replicaType: WORKER
@@ -30,7 +28,5 @@ spec:
             name: pytorch
             resources:
               limits:
-                cpu: "1"
-              requests:
-                cpu: "1"
+                nvidia.com/gpu: 1
           restartPolicy: OnFailure
