@@ -65,7 +65,7 @@ def objective(space, time_limit=TRAINING_TIME):
             "observations": observations,
             "seq_len": SEQ_LEN,
         }
-        loss = trainer.train(batch_data)
+        trainer.train(batch_data)
         if iteration % 100 == 0 and rank == 0:
             # writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()
