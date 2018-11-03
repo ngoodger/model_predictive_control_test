@@ -8,6 +8,7 @@ import torch.distributed as dist
 # import block_sys as bs
 import block_dataset
 import model
+import os
 
 # import pandas as pd
 import torch
@@ -25,11 +26,11 @@ SAVE_INTERVAL = 1000
 def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
+    world_size = int(space["world_size"])
     # writer = SummaryWriter("log_files/")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    samples_dataset = block_dataset.ModelDataSet(
-        TRAINING_ITERATIONS, SEQ_LEN, dist.get_rank()
-    )
+    rank = dist.get_rank() if world_size > 1 else 0
+    samples_dataset = block_dataset.ModelDataSet(TRAINING_ITERATIONS, SEQ_LEN, rank)
 
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
@@ -51,7 +52,9 @@ def objective(space, time_limit=TRAINING_TIME):
     #    model0 = torch.load(MODEL_PATH)
     # else:
     model0 = torch.nn.DataParallel(model_no_parallel).to(device)
-    trainer = model.ModelTrainer(learning_rate=learning_rate, model=model0)
+    trainer = model.ModelTrainer(
+        learning_rate=learning_rate, model=model0, world_size=world_size
+    )
     iteration = 0
     start = datetime.now()
     start_train = datetime.now()
@@ -63,14 +66,13 @@ def objective(space, time_limit=TRAINING_TIME):
             "seq_len": SEQ_LEN,
         }
         loss = trainer.train(batch_data)
-        if iteration % 100 == 0 and dist.get_rank() == 0:
+        if iteration % 100 == 0 and rank == 0:
             # writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()
             elapsed = elapsed - start
             print(
                 "Samples / Sec: {}".format(
-                    (dist.get_world_size() * 100. * batch_size)
-                    / elapsed.total_seconds()
+                    (world_size * 100. * batch_size) / elapsed.total_seconds()
                 )
             )
             print("Time:" + str(elapsed))
@@ -86,8 +88,11 @@ def objective(space, time_limit=TRAINING_TIME):
 
 
 if __name__ == "__main__":
-    dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-4, "batch_size": 1}
+    # Only use distributed data parallel if world_size > 1.
+    world_size = int(os.environ["WORLD_SIZE"])
+    if world_size > 1:
+        dist.init_process_group("tcp")
+    space = {"learning_rate": 1e-4, "batch_size": 1, "world_size": world_size}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 

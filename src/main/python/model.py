@@ -42,8 +42,8 @@ def forward_sequence(model, batch_data, use_label_output=False):
 
 
 class ModelTrainer(trainer.BaseTrainer):
-    def __init__(self, learning_rate, model):
-        super(ModelTrainer, self).__init__(learning_rate, model)
+    def __init__(self, learning_rate, model, world_size):
+        super(ModelTrainer, self).__init__(learning_rate, model, world_size)
 
     def get_criterion(self):
         criterion = nn.BCEWithLogitsLoss()
