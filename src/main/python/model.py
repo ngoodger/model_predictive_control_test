@@ -80,6 +80,7 @@ class Model(nn.Module):
         force_hidden_layer_size,
         middle_hidden_layer_size,
         recurrent_layer_size,
+        batch_size,
     ):
         """
         force_add determines whether the force is added or concatonated.
@@ -96,12 +97,17 @@ class Model(nn.Module):
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
         self.recurrent_layer_size = recurrent_layer_size
+        self.batch_size = batch_size
+        # This should be done differently.
+        # We actually want to only have 1 set of initial conditions parameters that we train.
         self.init_recurrent_state = (
             torch.nn.Parameter(
-                torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
+                torch.rand(LSTM_DEPTH, batch_size, middle_hidden_layer_size),
+                requires_grad=True,
             ),
             torch.nn.Parameter(
-                torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
+                torch.rand(LSTM_DEPTH, batch_size, middle_hidden_layer_size),
+                requires_grad=True,
             ),
         )
         LAYERS = 4
@@ -240,12 +246,12 @@ class Model(nn.Module):
         # Combine outputs from previous recurrent state and force layer.
         combined = torch.add(out_cnn_recurrent, out_force_recurrent)
         out_recurrent, out_recurrent_state = self.layer_recurrent(
-            combined.view(1, 1, -1), last_recurrent_state
+            combined.view(1, self.batch_size, -1), last_recurrent_state
         )
         out_image_flat_hidden = self.layer_recurrent_out(out_recurrent)
 
         out_image_hidden = out_image_flat_hidden.view(
-            out_image_flat_hidden.size(0),
+            self.batch_size,
             self.layer_4_cnn_filters,
             self.middle_layer_image_width,
             self.middle_layer_image_width,

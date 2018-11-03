@@ -4,8 +4,7 @@ from datetime import datetime, timedelta
 # from tensorboardX import SummaryWriter
 import torch.distributed as dist
 
-# import block_sys
-# import block_sys as bs
+# import block_sys # import block_sys as bs
 import block_dataset
 import model
 import os
@@ -47,6 +46,7 @@ def objective(space, time_limit=TRAINING_TIME):
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
         recurrent_layer_size=128,
+        batch_size=batch_size,
     )
     # if os.path.exists(MODEL_PATH):
     #    model0 = torch.load(MODEL_PATH)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     if world_size > 1:
         dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-4, "batch_size": 1, "world_size": world_size}
+    space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 
