@@ -60,9 +60,13 @@ def objective(space, time_limit=TRAINING_TIME):
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
         forces, observations = data
+        forces_device = [torch.tensor(force, device=device) for force in forces]
+        observations_device = [
+            torch.tensor(observation, device=device) for observation in observations
+        ]
         batch_data = {
-            "forces": forces,
-            "observations": observations,
+            "forces": forces_device,
+            "observations": observations_device,
             "seq_len": SEQ_LEN,
         }
         trainer.train(batch_data)
