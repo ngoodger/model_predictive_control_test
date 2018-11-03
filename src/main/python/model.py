@@ -81,6 +81,7 @@ class Model(nn.Module):
         middle_hidden_layer_size,
         recurrent_layer_size,
         batch_size,
+        device,
     ):
         """
         force_add determines whether the force is added or concatonated.
@@ -98,17 +99,18 @@ class Model(nn.Module):
         self.middle_hidden_layer_size = middle_hidden_layer_size
         self.recurrent_layer_size = recurrent_layer_size
         self.batch_size = batch_size
+        self.device = device
         # This should be done differently.
         # We actually want to only have 1 set of initial conditions parameters that we train.
         self.init_recurrent_state = (
             torch.nn.Parameter(
                 torch.rand(LSTM_DEPTH, batch_size, middle_hidden_layer_size),
                 requires_grad=True,
-            ),
+            ).to(self.device),
             torch.nn.Parameter(
                 torch.rand(LSTM_DEPTH, batch_size, middle_hidden_layer_size),
                 requires_grad=True,
-            ),
+            ).to(self.device),
         )
         LAYERS = 4
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))

@@ -47,11 +47,13 @@ def objective(space, time_limit=TRAINING_TIME):
         middle_hidden_layer_size=128,
         recurrent_layer_size=128,
         batch_size=batch_size,
+        device=device,
     )
     # if os.path.exists(MODEL_PATH):
     #    model0 = torch.load(MODEL_PATH)
     # else:
     model0 = torch.nn.DataParallel(model_no_parallel).to(device)
+    print(dir(model0))
     trainer = model.ModelTrainer(
         learning_rate=learning_rate, model=model0, world_size=world_size
     )
