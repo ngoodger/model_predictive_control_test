@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # Only use distributed data parallel if world_size > 1.
     world_size = int(os.environ["WORLD_SIZE"])
     if world_size > 1:
-        dist.init_process_group("gloo")
+        dist.init_process_group("tcp")
     space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
