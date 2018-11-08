@@ -52,7 +52,8 @@ def objective(space, time_limit=TRAINING_TIME):
     # if os.path.exists(MODEL_PATH):
     #    model0 = torch.load(MODEL_PATH)
     # else:
-    model0 = torch.nn.DataParallel(model_no_parallel).to(device)
+    # model0 = torch.nn.DataParallel(model_no_parallel).to(device)
+    model0 = model_no_parallel.to(device)
     print(dir(model0))
     trainer = model.ModelTrainer(
         learning_rate=learning_rate, model=model0, world_size=world_size
@@ -87,8 +88,8 @@ def objective(space, time_limit=TRAINING_TIME):
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:
             break
-        # if iteration % SAVE_INTERVAL == 0:
-        #    torch.save(model0, MODEL_PATH)
+        if iteration % SAVE_INTERVAL == 0:
+            torch.save(model0, MODEL_PATH)
     # return mean_loss
     return model0
 
@@ -97,8 +98,8 @@ if __name__ == "__main__":
     # Only use distributed data parallel if world_size > 1.
     world_size = int(os.environ["WORLD_SIZE"])
     if world_size > 1:
-        dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
+        dist.init_process_group("gloo")
+    space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 
