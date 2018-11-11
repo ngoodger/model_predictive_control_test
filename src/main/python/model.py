@@ -127,7 +127,6 @@ class Model(nn.Module):
                 padding=int(layer_1_kernel_size / 2),
             ),
             # nn.BatchNorm2d(2),
-            nn.LeakyReLU(),
         )
         self.layer_cnn_1 = nn.Sequential(
             nn.Conv3d(
@@ -138,7 +137,6 @@ class Model(nn.Module):
                 padding=int(layer_2_kernel_size / 2),
             ),
             # nn.BatchNorm2d(4),
-            nn.LeakyReLU(),
         )
         self.layer_cnn_2 = nn.Sequential(
             nn.Conv3d(
@@ -149,7 +147,6 @@ class Model(nn.Module):
                 padding=int(layer_3_kernel_size / 2),
             ),
             # nn.BatchNorm2d(4),
-            nn.LeakyReLU(),
         )
         self.layer_cnn_3 = nn.Sequential(
             nn.Conv3d(
@@ -160,7 +157,6 @@ class Model(nn.Module):
                 padding=int(layer_4_kernel_size / 2),
             ),
             # nn.BatchNorm2d(4),
-            nn.LeakyReLU(),
         )
         self.layer_tcnn_0 = nn.Sequential(
             nn.ConvTranspose3d(
@@ -172,7 +168,6 @@ class Model(nn.Module):
                 output_padding=[1, 1, 1],
             ),
             # nn.BatchNorm2d(4),
-            nn.LeakyReLU(),
         )
         self.layer_tcnn_1 = nn.Sequential(
             nn.ConvTranspose3d(
@@ -184,7 +179,6 @@ class Model(nn.Module):
                 output_padding=[1, 1, 1],
             ),
             # nn.BatchNorm2d(4),
-            nn.LeakyReLU(),
         )
         self.layer_tcnn_2 = nn.Sequential(
             nn.ConvTranspose3d(
@@ -196,7 +190,6 @@ class Model(nn.Module):
                 output_padding=[1, 1, 0],
             ),
             # nn.BatchNorm2d(2),
-            nn.LeakyReLU(),
         )
         self.layer_tcnn_3 = nn.Sequential(
             nn.ConvTranspose3d(
@@ -222,6 +215,7 @@ class Model(nn.Module):
             middle_hidden_layer_size, middle_hidden_layer_size, LSTM_DEPTH
         )
         self.layer_sigmoid_out = nn.Sequential(nn.Sigmoid())
+        self.leaky_relu = nn.LeakyReLU()
 
     def forward(
         self, observation, last_recurrent_state, force_0, force_1, first_iteration=False
@@ -236,10 +230,14 @@ class Model(nn.Module):
         # Only feed through the initial frame on the first iteration since the model must
         # rely on latent state to predict future outputs..
         x = observation
-        out_cnn_0 = self.layer_cnn_0(x)
-        out_cnn_1 = self.layer_cnn_1(out_cnn_0)
-        out_cnn_2 = self.layer_cnn_2(out_cnn_1)
-        out_cnn_3 = self.layer_cnn_3(out_cnn_2)
+        out_cnn_0_act = self.layer_cnn_0(x)
+        out_cnn_0 = self.leaky_relu(out_cnn_0_act)
+        out_cnn_1_act = self.layer_cnn_1(out_cnn_0)
+        out_cnn_1 = self.leaky_relu(out_cnn_1_act)
+        out_cnn_2_act = self.layer_cnn_2(out_cnn_1)
+        out_cnn_2 = self.leaky_relu(out_cnn_2_act)
+        out_cnn_3_act = self.layer_cnn_3(out_cnn_2)
+        out_cnn_3 = self.leaky_relu(out_cnn_3_act)
         out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
         out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
         if first_iteration:
@@ -259,9 +257,13 @@ class Model(nn.Module):
             self.middle_layer_image_width,
             1,
         )
-        out_tcnn_0 = self.layer_tcnn_0(out_image_hidden)
-        out_tcnn_1 = self.layer_tcnn_1(out_tcnn_0)
-        out_tcnn_2 = self.layer_tcnn_2(out_tcnn_1)
-        out_logits = self.layer_tcnn_3(out_tcnn_2)
+        out_tcnn_0_act = self.layer_tcnn_0(torch.add(out_image_hidden, out_cnn_3))
+
+        out_tcnn_0 = self.leaky_relu(out_tcnn_0_act)
+        out_tcnn_1_act = self.layer_tcnn_1(torch.add(out_tcnn_0, out_cnn_2))
+        out_tcnn_1 = self.leaky_relu(out_tcnn_1_act)
+        out_tcnn_2_act = self.layer_tcnn_2(torch.add(out_tcnn_1, out_cnn_1))
+        out_tcnn_2 = self.leaky_relu(out_tcnn_2_act)
+        out_logits = self.layer_tcnn_3(torch.add(out_tcnn_2, out_cnn_0))
         out_sigmoid = self.layer_sigmoid_out(out_logits)
         return (out_logits, out_sigmoid, out_recurrent_state)
