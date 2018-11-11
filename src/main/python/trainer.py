@@ -5,8 +5,8 @@ import numpy as np
 from torch import optim
 import torch.distributed as dist
 
-LOSS_MEAN_WINDOW = 1000
-PRINT_LOSS_MEAN_ITERATION = 100
+LOSS_WINDOW_SIZE = 1000
+PRINT_LOSS_MEAN_INTERVAL = 100
 
 
 class BaseTrainer(object):
@@ -16,10 +16,10 @@ class BaseTrainer(object):
         self.iteration = 0
         self.nn_module = nn_module
         self.optimizer = optim.Adam(self.nn_module.parameters(), lr=learning_rate)
-        self.running_loss = np.ones(LOSS_MEAN_WINDOW)
-        self.running_loss_idx = 0
+        self.loss_window = np.ones(LOSS_WINDOW_SIZE)
+        self.loss_window_idx = 0
         self.criterion = self.get_criterion()
-        self.loss_mean_full = False
+        self.loss_window_full = False
         self.world_size = world_size
         print(self.nn_module)
 
@@ -42,14 +42,17 @@ class BaseTrainer(object):
         self.optimizer.zero_grad()
         loss = self.get_loss(batch_data)
         loss.backward()
-        self.running_loss[self.running_loss_idx] = loss.data[0]
-        if self.running_loss_idx >= LOSS_MEAN_WINDOW - 1:
-            self.running_loss_idx = 0
-            self.loss_mean_full = True
+        self.loss_window[self.loss_window_idx] = loss.data[0]
+        if self.loss_window_idx < LOSS_WINDOW_SIZE - 1:
+            self.loss_window_idx += 1
         else:
-            self.running_loss_idx += 1
-        mean_loss = np.sum(self.running_loss) / LOSS_MEAN_WINDOW
-        if (self.iteration % PRINT_LOSS_MEAN_ITERATION) == 0 and self.loss_mean_full:
+            self.loss_window_idx = 0
+            self.loss_window_full = True
+        if self.loss_window_full:
+            mean_loss = np.mean(self.loss_window)
+        else:
+            mean_loss = np.mean(self.loss_window[: self.loss_window_idx])
+        if (self.iteration % PRINT_LOSS_MEAN_INTERVAL) == 0:
             print("loss: {}".format(mean_loss))
         # Only average gradients across workers if there is more than 1.
         if self.world_size > 1:
