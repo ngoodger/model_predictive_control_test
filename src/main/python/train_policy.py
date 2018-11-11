@@ -9,11 +9,13 @@ from torch.utils.data import DataLoader
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 POLICY_PATH = "my_policy.pt"
+PRINT_INTERVAL = 100
 
 
 def objective(space, time_limit=TRAINING_TIME):
     learning_rate = space["learning_rate"]
     batch_size = int(space["batch_size"])
+    world_size = int(space["world_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     samples_dataset = block_dataset.PolicyDataSet(TRAINING_ITERATIONS)
 
@@ -32,23 +34,35 @@ def objective(space, time_limit=TRAINING_TIME):
         layer_4_kernel_size=3,
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
+        batch_size=batch_size,
+        device=device,
     )
     if os.path.exists(POLICY_PATH):
         policy0 = torch.load(POLICY_PATH)
     else:
         policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
     trainer = policy.PolicyTrainer(
-        learning_rate=learning_rate, policy=policy0, model=model
+        learning_rate=learning_rate, policy=policy0, model=model, world_size=world_size
     )
     iteration = 0
     start_time = datetime.now()
     start_train = datetime.now()
     for batch_idx, data in enumerate(dataloader):
         force_0, start, target = data
-        trainer.train({"start": start, "target": target, "force_0": force_0})
-        if iteration % 100 == 0:
+        force_0_device = torch.tensor(force_0, device=device)
+        start_device = torch.tensor(start, device=device)
+        target_device = torch.tensor(target, device=device)
+        trainer.train(
+            {"start": start_device, "target": target_device, "force_0": force_0_device}
+        )
+        if iteration % PRINT_INTERVAL == 0:
             elapsed = datetime.now()
             elapsed = elapsed - start_time
+            print(
+                "Samples / Sec: {}".format(
+                    (world_size * PRINT_INTERVAL * batch_size) / elapsed.total_seconds()
+                )
+            )
             print("Time:" + str(elapsed))
             start_time = datetime.now()
         iteration += 1
@@ -60,7 +74,8 @@ def objective(space, time_limit=TRAINING_TIME):
 
 
 if __name__ == "__main__":
-    space = {"learning_rate": 1e-4, "batch_size": 1}
+    world_size = int(os.environ["WORLD_SIZE"])
+    space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
     my_policy = objective(space, timedelta(hours=24))
     torch.save(my_policy, POLICY_PATH)
     # model = torch.load('my_model.pt')
