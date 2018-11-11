@@ -20,6 +20,7 @@ TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
 SEQ_LEN = 6
 SAVE_INTERVAL = 1000
+PRINT_INTERVAL = 100
 
 
 def objective(space, time_limit=TRAINING_TIME):
@@ -49,10 +50,10 @@ def objective(space, time_limit=TRAINING_TIME):
         batch_size=batch_size,
         device=device,
     )
-    # if os.path.exists(MODEL_PATH):
-    #    model0 = torch.load(MODEL_PATH)
-    # else:
-    # model0 = torch.nn.DataParallel(model_no_parallel).to(device)
+    if os.path.exists(MODEL_PATH):
+        model0 = torch.load(MODEL_PATH)
+    else:
+        model0 = model_no_parallel.to(device)
     model0 = model_no_parallel.to(device)
     print(dir(model0))
     trainer = model.ModelTrainer(
@@ -73,13 +74,13 @@ def objective(space, time_limit=TRAINING_TIME):
             "seq_len": SEQ_LEN,
         }
         trainer.train(batch_data)
-        if iteration % 100 == 0 and rank == 0:
+        if iteration % PRINT_INTERVAL == 0 and rank == 0:
             # writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()
             elapsed = elapsed - start
             print(
                 "Samples / Sec: {}".format(
-                    (world_size * 100. * batch_size) / elapsed.total_seconds()
+                    (world_size * PRINT_INTERVAL * batch_size) / elapsed.total_seconds()
                 )
             )
             print("Time:" + str(elapsed))
@@ -99,7 +100,7 @@ if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     if world_size > 1:
         dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
+    space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
     my_model = objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 
