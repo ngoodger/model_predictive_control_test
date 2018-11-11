@@ -8,8 +8,8 @@ STRIDE = 2
 
 
 class PolicyTrainer(trainer.BaseTrainer):
-    def __init__(self, learning_rate, policy, model):
-        super(PolicyTrainer, self).__init__(learning_rate, policy)
+    def __init__(self, learning_rate, policy, model, world_size):
+        super(PolicyTrainer, self).__init__(learning_rate, policy, world_size)
         self.model = model
 
     def get_criterion(self):
@@ -51,6 +51,8 @@ class Policy(nn.Module):
         layer_4_kernel_size,
         force_hidden_layer_size,
         middle_hidden_layer_size,
+        batch_size,
+        device,
     ):
         """
         force_add determines whether the force is added or concatonated.
@@ -66,6 +68,8 @@ class Policy(nn.Module):
         self.layer_3_kernel_size = layer_3_kernel_size
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
+        self.batch_size = batch_size
+        self.device = device
 
         LAYERS = 4
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
@@ -154,6 +158,6 @@ class Policy(nn.Module):
 
         # Combine outputs from cnn and force layers
         combined = torch.add(out_cnn, out_force)
-        out_policy_hidden = self.layer_policy_hidden(combined.view(1, -1))
+        out_policy_hidden = self.layer_policy_hidden(combined.view(self.batch_size, -1))
         out_policy = self.layer_policy(out_policy_hidden)
         return out_policy
