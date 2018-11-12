@@ -10,6 +10,7 @@ TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 POLICY_PATH = "my_policy.pt"
 PRINT_INTERVAL = 100
+SAVE_INTERVAL = 1000
 
 
 def objective(space, time_limit=TRAINING_TIME):
@@ -69,6 +70,8 @@ def objective(space, time_limit=TRAINING_TIME):
         # Limit training time to TRAINING_TIME
         if datetime.now() - start_train > time_limit:
             break
+        if iteration % SAVE_INTERVAL == 0:
+            torch.save(policy0, POLICY_PATH)
     # return mean_loss
     return policy0
 
