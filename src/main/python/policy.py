@@ -51,7 +51,6 @@ class Policy(nn.Module):
         layer_4_kernel_size,
         force_hidden_layer_size,
         middle_hidden_layer_size,
-        batch_size,
         device,
     ):
         """
@@ -68,7 +67,6 @@ class Policy(nn.Module):
         self.layer_3_kernel_size = layer_3_kernel_size
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
-        self.batch_size = batch_size
         self.device = device
 
         LAYERS = 4
@@ -147,6 +145,7 @@ class Policy(nn.Module):
 
     def forward(self, force_0, start, first_iteration=False):
 
+        batch_size = force_0.size(0)
         out_force = self.layer_force(force_0)
 
         out_cnn_0 = self.layer_cnn_0(start)
@@ -158,6 +157,6 @@ class Policy(nn.Module):
 
         # Combine outputs from cnn and force layers
         combined = torch.add(out_cnn, out_force)
-        out_policy_hidden = self.layer_policy_hidden(combined.view(self.batch_size, -1))
+        out_policy_hidden = self.layer_policy_hidden(combined.view(batch_size, -1))
         out_policy = self.layer_policy(out_policy_hidden)
         return out_policy
