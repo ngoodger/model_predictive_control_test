@@ -35,13 +35,13 @@ def objective(space, time_limit=TRAINING_TIME):
         layer_4_kernel_size=3,
         force_hidden_layer_size=32,
         middle_hidden_layer_size=128,
-        batch_size=batch_size,
         device=device,
     )
     if os.path.exists(POLICY_PATH):
         policy0 = torch.load(POLICY_PATH)
     else:
-        policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
+        # policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
+        policy0 = policy_no_parallel.to(device)
     trainer = policy.PolicyTrainer(
         learning_rate=learning_rate, policy=policy0, model=model, world_size=world_size
     )
@@ -78,7 +78,7 @@ def objective(space, time_limit=TRAINING_TIME):
 
 if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
-    space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
+    space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
     my_policy = objective(space, timedelta(hours=24))
     torch.save(my_policy, POLICY_PATH)
     # model = torch.load('my_model.pt')
