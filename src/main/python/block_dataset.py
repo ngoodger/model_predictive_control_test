@@ -10,7 +10,7 @@ MEAN_S0 = 0.
 
 
 class ModelDataSet(Dataset):
-    def __init__(self, size, seq_len, random_seed):
+    def __init__(self, size, seq_len, random_seed=0):
         super(ModelDataSet, self).__init__()
         self.my_block_sys = bs.BlockSys()
         self.size = size
