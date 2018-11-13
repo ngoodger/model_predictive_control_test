@@ -80,7 +80,6 @@ class Model(nn.Module):
         force_hidden_layer_size,
         middle_hidden_layer_size,
         recurrent_layer_size,
-        batch_size,
         device,
     ):
         """
@@ -98,18 +97,15 @@ class Model(nn.Module):
         self.layer_4_kernel_size = layer_4_kernel_size
         self.middle_hidden_layer_size = middle_hidden_layer_size
         self.recurrent_layer_size = recurrent_layer_size
-        self.batch_size = batch_size
         self.device = device
         # This should be done differently.
         # We actually want to only have 1 set of initial conditions parameters that we train.
         self.init_recurrent_state = (
             torch.nn.Parameter(
-                torch.rand(LSTM_DEPTH, batch_size, middle_hidden_layer_size),
-                requires_grad=True,
+                torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
             ).to(self.device),
             torch.nn.Parameter(
-                torch.rand(LSTM_DEPTH, batch_size, middle_hidden_layer_size),
-                requires_grad=True,
+                torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
             ).to(self.device),
         )
         LAYERS = 4
@@ -230,6 +226,7 @@ class Model(nn.Module):
         # Only feed through the initial frame on the first iteration since the model must
         # rely on latent state to predict future outputs..
         x = observation
+        batch_size = x.size(0)
         out_cnn_0_act = self.layer_cnn_0(x)
         out_cnn_0 = self.leaky_relu(out_cnn_0_act)
         out_cnn_1_act = self.layer_cnn_1(out_cnn_0)
@@ -241,17 +238,20 @@ class Model(nn.Module):
         out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
         out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
         if first_iteration:
-            last_recurrent_state = self.init_recurrent_state
+            last_recurrent_state = tuple(
+                x.expand(LSTM_DEPTH, batch_size, self.middle_hidden_layer_size)
+                for x in self.init_recurrent_state
+            )
 
         # Combine outputs from previous recurrent state and force layer.
         combined = torch.add(out_cnn_recurrent, out_force_recurrent)
         out_recurrent, out_recurrent_state = self.layer_recurrent(
-            combined.view(1, self.batch_size, -1), last_recurrent_state
+            combined.view(1, batch_size, -1), last_recurrent_state
         )
         out_image_flat_hidden = self.layer_recurrent_out(out_recurrent)
 
         out_image_hidden = out_image_flat_hidden.view(
-            self.batch_size,
+            batch_size,
             self.layer_4_cnn_filters,
             self.middle_layer_image_width,
             self.middle_layer_image_width,
