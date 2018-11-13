@@ -15,7 +15,9 @@ class BaseTrainer(object):
     def __init__(self, learning_rate, nn_module, world_size):
         self.iteration = 0
         self.nn_module = nn_module
-        self.optimizer = optim.Adam(self.nn_module.parameters(), lr=learning_rate)
+        self.optimizer = optim.SGD(
+            self.nn_module.parameters(), lr=learning_rate, momentum=0.9
+        )
         self.loss_window = np.ones(LOSS_WINDOW_SIZE)
         self.loss_window_idx = 0
         self.criterion = self.get_criterion()
