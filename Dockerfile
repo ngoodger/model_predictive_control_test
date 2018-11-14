@@ -7,4 +7,3 @@ RUN pip3 install -r /project/requirements.txt
 WORKDIR /project
 ADD ./src /project/src
 ADD ./Makefile /project/
-ENTRYPOINT ["python3", "/project/src/main/python/train_model.py"]
