@@ -22,12 +22,18 @@ class PolicyTrainer(trainer.BaseTrainer):
         y = batch_data["target"]
         for i in range(TARGET_HORIZON):
             if i == 0:
-                force_1 = self.nn_module.forward(force_0, start) * FORCE_SCALE * 0.5
+                force_1_unscaled, out_cnn_target = self.nn_module.forward(
+                    force_0, start, y, first_iteration=True
+                )
+                force_1 = force_1_unscaled * FORCE_SCALE * 0.5
                 logits, out, recurrent_state = self.model.forward(
                     start, None, force_0, force_1, first_iteration=True
                 )
             else:
-                force_1 = self.nn_module.forward(force_0, out) * FORCE_SCALE * 0.5
+                force_1_unscaled, _ = self.nn_module.forward(
+                    force_0, out, y, out_cnn_target, first_iteration=False
+                )
+                force_1 = force_1_unscaled * FORCE_SCALE * 0.5
                 logits, out, recurrent_state = self.model.forward(
                     out, recurrent_state, force_0, force_1, first_iteration=False
                 )
@@ -143,20 +149,33 @@ class Policy(nn.Module):
         )
         self.layer_policy = nn.Linear(middle_hidden_layer_size, 2)
 
-    def forward(self, force_0, start, first_iteration=False):
+    def forward(
+        self, force_0, start, target, out_cnn_target=None, first_iteration=False
+    ):
 
         batch_size = force_0.size(0)
         out_force = self.layer_force(force_0)
 
-        out_cnn_0 = self.layer_cnn_0(start)
-        out_cnn_1 = self.layer_cnn_1(out_cnn_0)
-        out_cnn_2 = self.layer_cnn_2(out_cnn_1)
-        out_cnn_3 = self.layer_cnn_3(out_cnn_2)
-        out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
-        out_cnn = self.layer_cnn(out_input_image_flat)
+        out_cnn_start_0 = self.layer_cnn_0(start)
+        out_cnn_start_1 = self.layer_cnn_1(out_cnn_start_0)
+        out_cnn_start_2 = self.layer_cnn_2(out_cnn_start_1)
+        out_cnn_start_3 = self.layer_cnn_3(out_cnn_start_2)
+        out_input_image_flat_start = out_cnn_start_3.view(out_cnn_start_3.size(0), -1)
+        out_cnn_start = self.layer_cnn(out_input_image_flat_start)
+
+        # Only need to run target CNN on for first iteration.
+        if first_iteration:
+            out_cnn_target_0 = self.layer_cnn_0(target)
+            out_cnn_target_1 = self.layer_cnn_1(out_cnn_target_0)
+            out_cnn_target_2 = self.layer_cnn_2(out_cnn_target_1)
+            out_cnn_target_3 = self.layer_cnn_3(out_cnn_target_2)
+            out_input_image_flat_target = out_cnn_target_3.view(
+                out_cnn_target_3.size(0), -1
+            )
+            out_cnn_target = self.layer_cnn(out_input_image_flat_target)
 
         # Combine outputs from cnn and force layers
-        combined = torch.add(out_cnn, out_force)
+        combined = torch.add(out_cnn_target, torch.add(out_cnn_start, out_force))
         out_policy_hidden = self.layer_policy_hidden(combined.view(batch_size, -1))
         out_policy = self.layer_policy(out_policy_hidden)
-        return out_policy
+        return out_policy, out_cnn_target
