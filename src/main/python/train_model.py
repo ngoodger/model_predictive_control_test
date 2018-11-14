@@ -18,8 +18,8 @@ from torch.utils.data import DataLoader
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
-SEQ_LEN = 6
-SAVE_INTERVAL = 1000
+SEQ_LEN = 4
+SAVE_INTERVAL = 100
 PRINT_INTERVAL = 100
 
 
@@ -35,26 +35,28 @@ def objective(space, time_limit=TRAINING_TIME):
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
-    model_no_parallel = model.Model(
-        layer_1_cnn_filters=16,
-        layer_2_cnn_filters=16,
-        layer_3_cnn_filters=16,
-        layer_4_cnn_filters=32,
-        layer_1_kernel_size=3,
-        layer_2_kernel_size=3,
-        layer_3_kernel_size=3,
-        layer_4_kernel_size=3,
-        force_hidden_layer_size=32,
-        middle_hidden_layer_size=128,
-        recurrent_layer_size=128,
-        device=device,
-    )
+
     if os.path.exists(MODEL_PATH):
+        print("Loading pre-existing model.")
         model0 = torch.load(MODEL_PATH)
     else:
+        print("Starting from untrained model.")
+        model_no_parallel = model.Model(
+            layer_1_cnn_filters=16,
+            layer_2_cnn_filters=16,
+            layer_3_cnn_filters=16,
+            layer_4_cnn_filters=32,
+            layer_1_kernel_size=3,
+            layer_2_kernel_size=3,
+            layer_3_kernel_size=3,
+            layer_4_kernel_size=3,
+            force_hidden_layer_size=32,
+            middle_hidden_layer_size=128,
+            recurrent_layer_size=128,
+            device=device,
+        )
         model0 = model_no_parallel.to(device)
-    model0 = model_no_parallel.to(device)
-    print(dir(model0))
+
     trainer = model.ModelTrainer(
         learning_rate=learning_rate, model=model0, world_size=world_size
     )
@@ -90,7 +92,6 @@ def objective(space, time_limit=TRAINING_TIME):
             break
         if iteration % SAVE_INTERVAL == 0:
             torch.save(model0, MODEL_PATH)
-    # return mean_loss
     return model0
 
 
@@ -100,7 +101,8 @@ if __name__ == "__main__":
     if world_size > 1:
         dist.init_process_group("tcp")
     space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
-    my_model = objective(space, timedelta(hours=24))
+    model0 = objective(space, timedelta(hours=24))
+    torch.save(model0, MODEL_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
