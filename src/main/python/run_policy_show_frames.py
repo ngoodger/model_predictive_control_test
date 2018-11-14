@@ -43,8 +43,19 @@ def run_policy_show_frames():
         force_0_tensor = torch.from_numpy(force_0).to(device)
         start = torch.from_numpy(s0).to(device)
         target = torch.from_numpy(s1_target).to(device)
-        batch_data = {"start": start, "target": target, "force_0": force_0_tensor}
-        force_1 = policy.forward(force_0_tensor, start)
+        # batch_data = {"start": start, "target": target, "force_0": force_0_tensor}
+        if i == 0:
+            force_1, out_cnn_target = policy.forward(
+                force_0_tensor, start, target, first_iteration=True
+            )
+        else:
+            force_1, _ = policy.forward(
+                force_0_tensor,
+                start,
+                target,
+                out_cnn_target=out_cnn_target,
+                first_iteration=False,
+            )
 
         for i in range(FRAMES):
             s0_frame = start[0, :, :, :, i].data.numpy()
