@@ -10,7 +10,7 @@ TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 POLICY_PATH = "my_policy.pt"
 PRINT_INTERVAL = 100
-SAVE_INTERVAL = 1000
+SAVE_INTERVAL = 100
 
 
 def objective(space, time_limit=TRAINING_TIME):
@@ -23,24 +23,28 @@ def objective(space, time_limit=TRAINING_TIME):
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
+    # Always load pre-trained model.
     model = torch.load("my_model.pt")
-    policy_no_parallel = policy.Policy(
-        layer_1_cnn_filters=16,
-        layer_2_cnn_filters=16,
-        layer_3_cnn_filters=16,
-        layer_4_cnn_filters=32,
-        layer_1_kernel_size=3,
-        layer_2_kernel_size=3,
-        layer_3_kernel_size=3,
-        layer_4_kernel_size=3,
-        force_hidden_layer_size=32,
-        middle_hidden_layer_size=128,
-        device=device,
-    )
+
     if os.path.exists(POLICY_PATH):
+        print("Loading pre-trained policy.")
         policy0 = torch.load(POLICY_PATH)
     else:
         # policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
+        print("Starting from untrained policy.")
+        policy_no_parallel = policy.Policy(
+            layer_1_cnn_filters=16,
+            layer_2_cnn_filters=16,
+            layer_3_cnn_filters=16,
+            layer_4_cnn_filters=32,
+            layer_1_kernel_size=3,
+            layer_2_kernel_size=3,
+            layer_3_kernel_size=3,
+            layer_4_kernel_size=3,
+            force_hidden_layer_size=32,
+            middle_hidden_layer_size=128,
+            device=device,
+        )
         policy0 = policy_no_parallel.to(device)
     trainer = policy.PolicyTrainer(
         learning_rate=learning_rate, policy=policy0, model=model, world_size=world_size
@@ -79,8 +83,8 @@ def objective(space, time_limit=TRAINING_TIME):
 if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
-    my_policy = objective(space, timedelta(hours=24))
-    torch.save(my_policy, POLICY_PATH)
+    policy0 = objective(space, timedelta(hours=24))
+    torch.save(policy0, POLICY_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
