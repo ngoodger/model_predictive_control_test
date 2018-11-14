@@ -3,7 +3,7 @@ kind: "PyTorchJob"
 metadata:
   name: "pytorch-tcp-dist-mpc-test-v6"
 spec:
-  backend: "gloo"
+  backend: "tcp"
   masterPort: "23456"
   replicaSpecs:
     - replicas: 1
@@ -14,11 +14,13 @@ spec:
           - image: gcr.io/t-pulsar-217904/mpc_test
             imagePullPolicy: IfNotPresent
             name: pytorch
+            command: ["python3", "/project/src/main/python/train_policy.py"]
             resources:
               limits:
+                cpu: "1"
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
-    - replicas: 1
+    - replicas: 0
       replicaType: WORKER
       template:
         spec:
@@ -26,7 +28,9 @@ spec:
           - image: gcr.io/t-pulsar-217904/mpc_test
             imagePullPolicy: IfNotPresent
             name: pytorch
+            command: ["python3", "/project/src/main/python/train_policy.py"]
             resources:
               limits:
+                cpu: "1"
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
