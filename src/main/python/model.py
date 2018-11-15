@@ -238,8 +238,11 @@ class Model(nn.Module):
         out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
         out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
         if first_iteration:
+            # TODO Shouldn't need to use contiguous here as it is a view of contiguous memory.
             last_recurrent_state = tuple(
-                x.expand(LSTM_DEPTH, batch_size, self.middle_hidden_layer_size)
+                x.expand(
+                    LSTM_DEPTH, batch_size, self.middle_hidden_layer_size
+                ).contiguous()
                 for x in self.init_recurrent_state
             )
 
