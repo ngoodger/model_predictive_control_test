@@ -30,5 +30,5 @@ build_image:
 	docker build . -t mpc_test
 
 push_image_gke: build_image
-	docker tag mpc_test gcr.io/t-pulsar-217904/mpc_test_v1
-	docker push gcr.io/t-pulsar-217904/mpc_test_v1
+	docker tag mpc_test gcr.io/proud-spring-222310/mpc_test_v1
+	docker push gcr.io/proud-spring-222310/mpc_test_v1
