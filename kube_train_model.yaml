@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v6"
+  name: "pytorch-tcp-dist-mpc-test-v7"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/t-pulsar-217904/mpc_test
+          - image: gcr.io/proud-spring-222310/mpc_test_v1
             imagePullPolicy: IfNotPresent
             name: pytorch
             command: ["python3", "/project/src/main/python/train_model.py"]
@@ -25,7 +25,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/t-pulsar-217904/mpc_test
+          - image: gcr.io/proud-spring-222310/mpc_test_v1
             imagePullPolicy: IfNotPresent
             name: pytorch
             command: ["python3", "/project/src/main/python/train_model.py"]
