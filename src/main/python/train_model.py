@@ -100,7 +100,7 @@ if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     if world_size > 1:
         dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
+    space = {"learning_rate": 1e-3, "batch_size": 8, "world_size": world_size}
     model0 = objective(space, timedelta(hours=24))
     torch.save(model0, MODEL_PATH)
     # model = torch.load('my_model.pt')

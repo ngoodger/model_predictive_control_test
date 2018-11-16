@@ -42,7 +42,7 @@ class BaseTrainer(object):
         self.optimizer.zero_grad()
         loss = self.get_loss(batch_data)
         loss.backward()
-        self.loss_window[self.loss_window_idx] = loss.data[0]
+        self.loss_window[self.loss_window_idx] = loss.data
         if self.loss_window_idx < LOSS_WINDOW_SIZE - 1:
             self.loss_window_idx += 1
         else:
@@ -59,4 +59,4 @@ class BaseTrainer(object):
             self.average_gradients()
         self.optimizer.step()
         self.iteration += 1
-        return loss.data[0]
+        return loss.data
