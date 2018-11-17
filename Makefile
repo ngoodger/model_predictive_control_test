@@ -27,8 +27,8 @@ run_policy_show_frames:
 	python3 src/main/python/run_policy_show_frames.py
 
 build_image:
-	docker build . -t mpc_test
+	docker build . -t mpc_test:$(file < VERSION)
 
 push_image_gke: build_image
-	docker tag mpc_test gcr.io/proud-spring-222310/mpc_test_v1
-	docker push gcr.io/proud-spring-222310/mpc_test_v1
+	docker tag mpc_test:$(file < VERSION) gcr.io/$(file < GKE_PROJECT)/mpc_test:$(file < VERSION)
+	docker push gcr.io/$(file < GKE_PROJECT)/mpc_test:$(file < VERSION)
