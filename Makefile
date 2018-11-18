@@ -38,6 +38,6 @@ update_deployment_version:
 	cat kube_train_model.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_model.yaml.bak
 	mv kube_train_model.yaml.bak kube_train_model.yaml
 
-push_image_gke: build_image
+push_image_gke: build_image update_deployment_version
 	docker tag mpc_test:$(VERSION) gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)
 	docker push gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)
