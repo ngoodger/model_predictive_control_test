@@ -104,7 +104,7 @@ if __name__ == "__main__":
             dist.init_process_group("nccl")
         else:
             dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-3, "batch_size": 8, "world_size": world_size}
+    space = {"learning_rate": 1e-3, "batch_size": 64, "world_size": world_size}
     model0 = objective(space, timedelta(minutes=3))
     torch.save(model0, MODEL_PATH)
     # model = torch.load('my_model.pt')
