@@ -1,3 +1,8 @@
+export VERSION := $(shell git rev-parse HEAD)
+export GKE_PROJECT := $(shell cat GKE_PROJECT)
+export MPC_IMAGE := gcr.io\/$(GKE_PROJECT)\/mpc_test:$(VERSION)
+export KUBE_YAML_IMAGE_INDENT := \ \ \ \ \ \ \ \ \ \ 
+
 install:
 	cp scripts/pre-commit .git/hooks/
 
@@ -27,8 +32,12 @@ run_policy_show_frames:
 	python3 src/main/python/run_policy_show_frames.py
 
 build_image:
-	docker build . -t mpc_test:$(file < VERSION)
+	docker build . -t mpc_test:$(VERSION)
+
+update_deployment_version:
+	@echo $(MPC_IMAGE)
+	cat kube_train_model.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > new.txt
 
 push_image_gke: build_image
-	docker tag mpc_test:$(file < VERSION) gcr.io/$(file < GKE_PROJECT)/mpc_test:$(file < VERSION)
-	docker push gcr.io/$(file < GKE_PROJECT)/mpc_test:$(file < VERSION)
+	docker tag mpc_test:$(VERSION) gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)
+	docker push gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)
