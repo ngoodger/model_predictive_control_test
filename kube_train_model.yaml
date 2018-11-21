@@ -12,6 +12,9 @@ spec:
         spec:
           containers:
           - image: gcr.io/proud-spring-222310/mpc_test:7dd41de78e9ad443fce7862051bac0166b899174
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "gs_key.json"
             imagePullPolicy: Always
             useHostIPC: true
             name: pytorch

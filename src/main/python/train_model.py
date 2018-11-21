@@ -107,11 +107,14 @@ if __name__ == "__main__":
             dist.init_process_group("tcp")
     space = {"learning_rate": 1e-3, "batch_size": 4, "world_size": world_size}
     model0 = objective(space, timedelta(seconds=30))
+    rank = dist.get_rank() if world_size > 1 else 0
     torch.save(model0, MODEL_PATH)
-    client = storage.Client()
-    bucket = client.get_bucket("mpc-test")
-    blob = bucket.blob(MODEL_PATH)
-    blob.upload_from_filename(MODEL_PATH)
+    # On master save to storage bucket.
+    if rank == 0:
+        client = storage.Client()
+        bucket = client.get_bucket("mpc-test")
+        blob = bucket.blob(MODEL_PATH)
+        blob.upload_from_filename(MODEL_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
