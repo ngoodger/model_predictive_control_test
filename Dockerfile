@@ -7,3 +7,4 @@ RUN pip3 install -r /project/requirements.txt
 WORKDIR /project
 ADD ./src /project/src
 ADD ./Makefile /project/
+ADD ./gs_key.json /project/
