@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v16"
+  name: "pytorch-tcp-dist-mpc-test-v14"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -17,13 +17,10 @@ spec:
               value: "gs_key.json"
             - name: MODEL_BUCKET 
               value: "mpc-test"
-            imagePullPolicy: Always
+            imagePullPolicy: Always 
             useHostIPC: true
             name: pytorch
             command: ["python3", "/project/src/main/python/train_model.py"]
-            resources:
-              limits:
-                nvidia.com/gpu: 1
           restartPolicy: OnFailure
     - replicas: 1
       replicaType: WORKER
@@ -31,11 +28,8 @@ spec:
         spec:
           containers:
           - image: gcr.io/proud-spring-222310/mpc_test:7dd41de78e9ad443fce7862051bac0166b899174
-            imagePullPolicy: Always
+            imagePullPolicy: Always 
             useHostIPC: true
             name: pytorch
             command: ["python3", "/project/src/main/python/train_model.py"]
-            resources:
-              limits:
-                nvidia.com/gpu: 1
           restartPolicy: OnFailure
