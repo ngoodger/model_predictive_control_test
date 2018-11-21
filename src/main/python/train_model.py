@@ -8,6 +8,7 @@ import torch.distributed as dist
 import block_dataset
 import model
 import os
+from google.cloud import storage
 
 # import pandas as pd
 import torch
@@ -104,9 +105,13 @@ if __name__ == "__main__":
             dist.init_process_group("nccl")
         else:
             dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-3, "batch_size": 64, "world_size": world_size}
-    model0 = objective(space, timedelta(minutes=3))
+    space = {"learning_rate": 1e-3, "batch_size": 4, "world_size": world_size}
+    model0 = objective(space, timedelta(seconds=30))
     torch.save(model0, MODEL_PATH)
+    client = storage.Client()
+    bucket = client.get_bucket("mpc-test")
+    blob = bucket.blob(MODEL_PATH)
+    blob.upload_from_filename(MODEL_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
