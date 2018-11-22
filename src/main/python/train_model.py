@@ -6,8 +6,7 @@ import torch.distributed as dist
 
 # import block_sys # import block_sys as bs
 import block_dataset
-import model
-import os
+import model import os
 from google.cloud import storage
 
 # import pandas as pd
@@ -109,7 +108,7 @@ if __name__ == "__main__":
     model0 = objective(space, timedelta(seconds=30))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(model0, MODEL_PATH)
-    model_bucket = int(os.environ["MODEL_BUCKET"])
+    model_bucket = os.environ["MODEL_BUCKET"]
     # On master save to storage bucket.
     if rank == 0:
         client = storage.Client()
