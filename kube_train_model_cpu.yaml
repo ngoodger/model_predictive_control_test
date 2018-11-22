@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v14"
+  name: "pytorch-tcp-dist-mpc-test-v4"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:7dd41de78e9ad443fce7862051bac0166b899174
+          - image: gcr.io/proud-spring-222310/mpc_test:565910a4628cdbe6242189a8709c762ae39d97f4
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
@@ -21,15 +21,21 @@ spec:
             useHostIPC: true
             name: pytorch
             command: ["python3", "/project/src/main/python/train_model.py"]
-          restartPolicy: OnFailure
+            resources:
+              limits:
+                cpu: 0.8 
+          restartPolicy: Never
     - replicas: 1
       replicaType: WORKER
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:7dd41de78e9ad443fce7862051bac0166b899174
+          - image: gcr.io/proud-spring-222310/mpc_test:565910a4628cdbe6242189a8709c762ae39d97f4
             imagePullPolicy: Always 
             useHostIPC: true
             name: pytorch
+            resources:
+              limits:
+                cpu: 0.8
             command: ["python3", "/project/src/main/python/train_model.py"]
           restartPolicy: OnFailure
