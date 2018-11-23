@@ -111,7 +111,7 @@ if __name__ == "__main__":
     torch.save(model0, MODEL_PATH)
     # On master save to storage bucket.
     if rank == 0:
-        model_bucket = os.environ["MODEL_BUCKET"]
+        model_bucket = os.environ["GCS_BUCKET"]
         client = storage.Client()
         bucket = client.get_bucket(model_bucket)
         blob = bucket.blob(MODEL_PATH)

@@ -11,11 +11,11 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:7dd41de78e9ad443fce7862051bac0166b899174
+          - image: gcr.io/proud-spring-222310/mpc_test:fafcab75c8ccda2539fe2fdeed71da353757184b
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
-            - name: MODEL_BUCKET 
+            - name: GCS_BUCKET 
               value: "mpc-test"
             imagePullPolicy: Always
             useHostIPC: true
@@ -30,7 +30,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:7dd41de78e9ad443fce7862051bac0166b899174
+          - image: gcr.io/proud-spring-222310/mpc_test:fafcab75c8ccda2539fe2fdeed71da353757184b
             imagePullPolicy: Always
             useHostIPC: true
             name: pytorch

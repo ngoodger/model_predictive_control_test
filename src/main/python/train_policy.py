@@ -24,6 +24,11 @@ def objective(space, time_limit=TRAINING_TIME):
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
     # Always load pre-trained model.
+    model_bucket = os.environ["GCS_BUCKET"]
+    client = storage.Client()
+    bucket = client.get_bucket(model_bucket)
+    blob = bucket.blob(MODEL_PATH)
+    blob.download_to_filename(MODEL_PATH)
     model = torch.load("my_model.pt")
 
     if os.path.exists(POLICY_PATH):
@@ -85,6 +90,12 @@ if __name__ == "__main__":
     space = {"learning_rate": 1e-4, "batch_size": 1, "world_size": world_size}
     policy0 = objective(space, timedelta(hours=24))
     torch.save(policy0, POLICY_PATH)
+    if rank == 0:
+        policy_bucket = os.environ["GCS_BUCKET"]
+        client = storage.Client()
+        bucket = client.get_bucket(policy_bucket)
+        blob = bucket.blob(POLICY_PATH)
+        blob.upload_from_filename(POLICY_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:

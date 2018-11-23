@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v6"
+  name: "pytorch-tcp-dist-mpc-test-v16"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,26 +11,31 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test_v1
-            imagePullPolicy: IfNotPresent
+          - image: gcr.io/proud-spring-222310/mpc_test:fafcab75c8ccda2539fe2fdeed71da353757184b
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "gs_key.json"
+            - name: GCS_BUCKET 
+              value: "mpc-test"
+            imagePullPolicy: Always
+            useHostIPC: true
             name: pytorch
             command: ["python3", "/project/src/main/python/train_policy.py"]
             resources:
               limits:
-                cpu: "1"
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
-    - replicas: 0
+    - replicas: 1
       replicaType: WORKER
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test_v1
-            imagePullPolicy: IfNotPresent
+          - image: gcr.io/proud-spring-222310/mpc_test:fafcab75c8ccda2539fe2fdeed71da353757184b
+            imagePullPolicy: Always
+            useHostIPC: true
             name: pytorch
             command: ["python3", "/project/src/main/python/train_policy.py"]
             resources:
               limits:
-                cpu: "1"
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
