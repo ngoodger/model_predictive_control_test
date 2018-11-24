@@ -120,7 +120,7 @@ if __name__ == "__main__":
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
-    policy0 = objective(space, timedelta(minutes=1))
+    policy0 = objective(space, timedelta(minutes=10))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(policy0, POLICY_PATH)
     if rank == 0:
