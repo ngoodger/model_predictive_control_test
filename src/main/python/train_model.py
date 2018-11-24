@@ -37,8 +37,9 @@ def objective(space, time_limit=TRAINING_TIME):
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
 
-    if os.path.exists(MODEL_PATH):
+    if MODEL_PATH in list_blob_names("GCS_BUCKET")
         print("Loading pre-existing model.")
+        blob.download_to_filename(MODEL_PATH)
         model0 = torch.load(MODEL_PATH)
     else:
         print("Starting from untrained model.")
@@ -95,6 +96,12 @@ def objective(space, time_limit=TRAINING_TIME):
             torch.save(model0, MODEL_PATH)
     return model0
 
+def list_blob_names(bucket_name):
+    """Lists all the blob names in the bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blob_name_list = [blob.name for blob in bucket.list_blobs()]
+    return blob_name_list
 
 if __name__ == "__main__":
     # Only use distributed data parallel if world_size > 1.
@@ -124,4 +131,4 @@ if __name__ == "__main__":
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
-    # model.load_state_dict(torch.load('mytraining.pt'))
+    .load_state_dict(torch.load('mytraining.pt'))
