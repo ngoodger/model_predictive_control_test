@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v16"
+  name: "pytorch-tcp-dist-mpc-test-v17"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:48d429716f6a8d18f14e9c167990814217974563
+          - image: gcr.io/proud-spring-222310/mpc_test:eb5721b9513b42f692e8a99d32cf0e78328735c8
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
@@ -30,7 +30,12 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:48d429716f6a8d18f14e9c167990814217974563
+          - image: gcr.io/proud-spring-222310/mpc_test:eb5721b9513b42f692e8a99d32cf0e78328735c8
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "gs_key.json"
+            - name: GCS_BUCKET 
+              value: "mpc-test"
             imagePullPolicy: Always
             useHostIPC: true
             name: pytorch
