@@ -1,13 +1,16 @@
 import os.path
 from datetime import datetime, timedelta
+import torch.distributed as dist
 
 import block_dataset
 import policy
 import torch
 from torch.utils.data import DataLoader
+from google.cloud import storage
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
+MODEL_PATH = "my_policy.pt"
 POLICY_PATH = "my_policy.pt"
 PRINT_INTERVAL = 100
 SAVE_INTERVAL = 100
@@ -18,7 +21,8 @@ def objective(space, time_limit=TRAINING_TIME):
     batch_size = int(space["batch_size"])
     world_size = int(space["world_size"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    samples_dataset = block_dataset.PolicyDataSet(TRAINING_ITERATIONS)
+    rank = dist.get_rank() if world_size > 1 else 0
+    samples_dataset = block_dataset.PolicyDataSet(TRAINING_ITERATIONS, rank)
 
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
@@ -29,7 +33,7 @@ def objective(space, time_limit=TRAINING_TIME):
     bucket = client.get_bucket(model_bucket)
     blob = bucket.blob(MODEL_PATH)
     blob.download_to_filename(MODEL_PATH)
-    model = torch.load("my_model.pt")
+    model = torch.load(MODEL_PATH)
 
     if os.path.exists(POLICY_PATH):
         print("Loading pre-trained policy.")
@@ -89,6 +93,7 @@ if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     space = {"learning_rate": 1e-4, "batch_size": 1, "world_size": world_size}
     policy0 = objective(space, timedelta(hours=24))
+    rank = dist.get_rank() if world_size > 1 else 0
     torch.save(policy0, POLICY_PATH)
     if rank == 0:
         policy_bucket = os.environ["GCS_BUCKET"]

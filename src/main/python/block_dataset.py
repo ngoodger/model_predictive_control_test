@@ -50,11 +50,12 @@ class ModelDataSet(Dataset):
 
 
 class PolicyDataSet(Dataset):
-    def __init__(self, size):
+    def __init__(self, size, random_seed=0):
         super(PolicyDataSet, self).__init__()
         self.my_block_sys = bs.BlockSys()
         # Only one frame is used as target.
         self.size = size
+        seed(random_seed)
 
     def __len__(self):
         return self.size
