@@ -35,10 +35,14 @@ build_image:
 	docker build . -t mpc_test:$(VERSION)
 
 update_deployment_version:
-	cat kube_train_model.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_model.yaml.bak
-	mv kube_train_model.yaml.bak kube_train_model.yaml
+	cat kube_train_model_gpu.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_model_gpu.yaml.bak
+	mv kube_train_model_gpu.yaml.bak kube_train_model_gpu.yaml
 	cat kube_train_model_cpu.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_model_cpu.yaml.bak
 	mv kube_train_model_cpu.yaml.bak kube_train_model_cpu.yaml
+	cat kube_train_policy_gpu.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_policy_gpu.yaml.bak
+	mv kube_train_policy_gpu.yaml.bak kube_train_policy_gpu.yaml
+	cat kube_train_policy_cpu.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_policy_cpu.yaml.bak
+	mv kube_train_policy_cpu.yaml.bak kube_train_policy_cpu.yaml
 
 push_image_gke: build_image update_deployment_version
 	docker tag mpc_test:$(VERSION) gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)

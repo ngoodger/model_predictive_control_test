@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:2037a979b37e2bdbb793fbece411f3c011bd56f6
+          - image: gcr.io/proud-spring-222310/mpc_test:7f51d83f686f31304cb8cfbd18378f5dbeffcd1e
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
@@ -30,7 +30,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:2037a979b37e2bdbb793fbece411f3c011bd56f6
+          - image: gcr.io/proud-spring-222310/mpc_test:7f51d83f686f31304cb8cfbd18378f5dbeffcd1e
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
