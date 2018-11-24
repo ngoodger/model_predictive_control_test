@@ -7,7 +7,8 @@ import torch.distributed as dist
 # import block_sys # import block_sys as bs
 import block_dataset
 import model
-import os from google.cloud import storage
+import os
+from google.cloud import storage
 
 # import pandas as pd
 import torch
