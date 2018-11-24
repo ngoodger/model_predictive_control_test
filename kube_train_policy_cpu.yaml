@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v7"
+  name: "pytorch-mpc-test-policy-cpu-v7"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -25,7 +25,7 @@ spec:
               limits:
                 cpu: 0.5 
           restartPolicy: Never
-    - replicas: 1
+    - replicas: 0
       replicaType: WORKER
       template:
         spec:

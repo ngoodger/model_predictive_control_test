@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-tcp-dist-mpc-test-v16"
+  name: "pytorch-mpc-test-policy-gpu-v16"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -25,7 +25,7 @@ spec:
               limits:
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
-    - replicas: 1
+    - replicas: 0
       replicaType: WORKER
       template:
         spec:
