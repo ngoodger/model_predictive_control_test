@@ -10,7 +10,7 @@ from google.cloud import storage
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
-MODEL_PATH = "my_policy.pt"
+MODEL_PATH = "my_model.pt"
 POLICY_PATH = "my_policy.pt"
 PRINT_INTERVAL = 100
 SAVE_INTERVAL = 100
