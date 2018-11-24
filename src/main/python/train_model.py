@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 # from tensorboardX import SummaryWriter
 import torch.distributed as dist
 
+import json
+
 # import block_sys # import block_sys as bs
 import block_dataset
 import model
@@ -101,7 +103,7 @@ def objective(space, time_limit=TRAINING_TIME):
             torch.save(model0, MODEL_PATH)
     metadata_dict = {
         "mean_loss": mean_loss,
-        "training_time": datetime.now() - start_train,
+        "training_time": (datetime.now() - start_train).total_seconds(),
     }
     json_metadata = json.dumps(metadata_dict)
     with open(MODEL_METADATA_PATH, "w") as f:
