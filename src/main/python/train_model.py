@@ -37,7 +37,8 @@ def objective(space, time_limit=TRAINING_TIME):
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
 
-    if MODEL_PATH in list_blob_names("GCS_BUCKET"):
+    model_bucket = os.environ["GCS_BUCKET"]
+    if MODEL_PATH in list_blob_names(model_bucket):
         print("Loading pre-existing model.")
         blob.download_to_filename(MODEL_PATH)
         model0 = torch.load(MODEL_PATH)
