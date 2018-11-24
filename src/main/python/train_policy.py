@@ -96,7 +96,7 @@ def objective(space, time_limit=TRAINING_TIME):
     # return mean_loss
     metadata_dict = {
         "mean_loss": mean_loss,
-        "training_time": datetime.now() - start_train,
+        "training_time": (datetime.now() - start_train).total_seconds(),
     }
     json_metadata = json.dumps(metadata_dict)
     with open(POLICY_METADATA_PATH, "w") as f:
