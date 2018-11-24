@@ -94,6 +94,14 @@ def objective(space, time_limit=TRAINING_TIME):
     return policy0
 
 
+def list_blob_names(bucket_name):
+    """Lists all the blob names in the bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blob_name_list = [blob.name for blob in bucket.list_blobs()]
+    return blob_name_list
+
+
 if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     if torch.cuda.is_available():
