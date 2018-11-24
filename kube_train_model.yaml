@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:fafcab75c8ccda2539fe2fdeed71da353757184b
+          - image: gcr.io/proud-spring-222310/mpc_test:48d429716f6a8d18f14e9c167990814217974563
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
@@ -25,12 +25,12 @@ spec:
               limits:
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
-    - replicas: 1
+    - replicas: 0
       replicaType: WORKER
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:fafcab75c8ccda2539fe2fdeed71da353757184b
+          - image: gcr.io/proud-spring-222310/mpc_test:48d429716f6a8d18f14e9c167990814217974563
             imagePullPolicy: Always
             useHostIPC: true
             name: pytorch
