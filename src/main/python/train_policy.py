@@ -96,7 +96,7 @@ def objective(space, time_limit=TRAINING_TIME):
     # return mean_loss
     metadata_dict = {
         "mean_loss": mean_loss,
-        "training_time": date_time.now() - start_train,
+        "training_time": datetime.now() - start_train,
     }
     json_metadata = json.dumps(metadata_dict)
     with open(POLICY_METADATA_PATH, "w") as f:
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
-    policy0 = objective(space, timedelta(minutes=10))
+    policy0 = objective(space, timedelta(minutes=1))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(policy0, POLICY_PATH)
     if rank == 0:
