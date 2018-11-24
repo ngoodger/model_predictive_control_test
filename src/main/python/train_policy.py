@@ -33,11 +33,16 @@ def objective(space, time_limit=TRAINING_TIME):
     bucket = client.get_bucket(model_bucket)
     blob = bucket.blob(MODEL_PATH)
     blob.download_to_filename(MODEL_PATH)
-    model = torch.load(MODEL_PATH)
+    model = torch.load(MODEL_PATH, map_location=device)
 
-    if os.path.exists(POLICY_PATH):
+    policy_bucket = os.environ["GCS_BUCKET"]
+    if POLICY_PATH in list_blob_names(model_bucket):
         print("Loading pre-trained policy.")
-        policy0 = torch.load(POLICY_PATH)
+        client = storage.Client()
+        bucket = client.get_bucket(policy_bucket)
+        blob = bucket.blob(POLICY_PATH)
+        blob.download_to_filename(POLICY_PATH)
+        policy0 = torch.load(POLICY_PATH, map_location=device)
     else:
         # policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
         print("Starting from untrained policy.")
@@ -91,7 +96,12 @@ def objective(space, time_limit=TRAINING_TIME):
 
 if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
-    space = {"learning_rate": 1e-4, "batch_size": 1, "world_size": world_size}
+    if torch.cuda.is_available():
+        # Assuming we are using a gpu
+        space = {"learning_rate": 1e-3, "batch_size": 64, "world_size": world_size}
+    else:
+        # Assuming we are using a cpu
+        space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
     policy0 = objective(space, timedelta(hours=24))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(policy0, POLICY_PATH)
