@@ -59,4 +59,4 @@ class BaseTrainer(object):
             self.average_gradients()
         self.optimizer.step()
         self.iteration += 1
-        return loss.data
+        return mean_loss

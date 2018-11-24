@@ -7,11 +7,14 @@ import policy
 import torch
 from torch.utils.data import DataLoader
 from google.cloud import storage
+import json
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
+MODEL_METADATA_PATH = "my_model_metadata.json"
 POLICY_PATH = "my_policy.pt"
+POLICY_METADATA_PATH = "my_policy_metadata.json"
 PRINT_INTERVAL = 100
 SAVE_INTERVAL = 100
 
@@ -71,7 +74,7 @@ def objective(space, time_limit=TRAINING_TIME):
         force_0_device = torch.tensor(force_0, device=device)
         start_device = torch.tensor(start, device=device)
         target_device = torch.tensor(target, device=device)
-        trainer.train(
+        mean_loss = trainer.train(
             {"start": start_device, "target": target_device, "force_0": force_0_device}
         )
         if iteration % PRINT_INTERVAL == 0:
@@ -91,6 +94,13 @@ def objective(space, time_limit=TRAINING_TIME):
         if iteration % SAVE_INTERVAL == 0:
             torch.save(policy0, POLICY_PATH)
     # return mean_loss
+    metadata_dict = {
+        "mean_loss": mean_loss,
+        "training_time": date_time.now() - start_train,
+    }
+    json_metadata = json.dumps(metadata_dict)
+    with open(POLICY_METADATA_PATH, "w") as f:
+        f.write(json_metadata)
     return policy0
 
 
@@ -119,6 +129,8 @@ if __name__ == "__main__":
         bucket = client.get_bucket(policy_bucket)
         blob = bucket.blob(POLICY_PATH)
         blob.upload_from_filename(POLICY_PATH)
+        blob = bucket.blob(POLICY_METADATA_PATH)
+        blob.upload_from_filename(POLICY_METADATA_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:

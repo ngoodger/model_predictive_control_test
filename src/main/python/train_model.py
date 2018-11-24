@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
 MODEL_PATH = "my_model.pt"
+MODEL_METADATA_PATH = "my_model_metadata.json"
 SEQ_LEN = 4
 SAVE_INTERVAL = 100
 PRINT_INTERVAL = 100
@@ -80,7 +81,7 @@ def objective(space, time_limit=TRAINING_TIME):
             "observations": observations_device,
             "seq_len": SEQ_LEN,
         }
-        trainer.train(batch_data)
+        mean_loss = trainer.train(batch_data)
         if iteration % PRINT_INTERVAL == 0 and rank == 0:
             # writer.add_scalar("Train/Loss", loss, batch_idx)
             elapsed = datetime.now()
@@ -98,6 +99,13 @@ def objective(space, time_limit=TRAINING_TIME):
             break
         if iteration % SAVE_INTERVAL == 0:
             torch.save(model0, MODEL_PATH)
+    metadata_dict = {
+        "mean_loss": mean_loss,
+        "training_time": date_time.now() - start_train,
+    }
+    json_metadata = json.dumps(metadata_dict)
+    with open(MODEL_METADATA_PATH, "w") as f:
+        f.write(json_metadata)
     return model0
 
 
@@ -135,6 +143,8 @@ if __name__ == "__main__":
         bucket = client.get_bucket(model_bucket)
         blob = bucket.blob(MODEL_PATH)
         blob.upload_from_filename(MODEL_PATH)
+        blob = bucket.blob(MODEL_METADATA_PATH)
+        blob.upload_from_filename(MODEL_METADATA_PATH)
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
