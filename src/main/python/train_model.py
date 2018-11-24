@@ -44,7 +44,7 @@ def objective(space, time_limit=TRAINING_TIME):
         bucket = client.get_bucket(model_bucket)
         blob = bucket.blob(MODEL_PATH)
         blob.download_to_filename(MODEL_PATH)
-        model0 = torch.load(MODEL_PATH)
+        model0 = torch.load(MODEL_PATH, map_location=device)
     else:
         print("Starting from untrained model.")
         model_no_parallel = model.Model(
