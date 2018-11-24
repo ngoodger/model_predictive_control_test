@@ -7,8 +7,7 @@ import torch.distributed as dist
 # import block_sys # import block_sys as bs
 import block_dataset
 import model
-import os
-from google.cloud import storage
+import os from google.cloud import storage
 
 # import pandas as pd
 import torch
@@ -111,7 +110,7 @@ if __name__ == "__main__":
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
-    model0 = objective(space, timedelta(seconds=30))
+    model0 = objective(space, timedelta(minutes=10))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(model0, MODEL_PATH)
     # On master save to storage bucket.
