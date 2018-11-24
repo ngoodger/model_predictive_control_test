@@ -105,7 +105,12 @@ if __name__ == "__main__":
             dist.init_process_group("nccl")
         else:
             dist.init_process_group("tcp")
-    space = {"learning_rate": 1e-3, "batch_size": 4, "world_size": world_size}
+    if torch.cuda.is_available():
+        # Assuming we are using a gpu
+        space = {"learning_rate": 1e-3, "batch_size": 64, "world_size": world_size}
+    else:
+        # Assuming we are using a cpu
+        space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
     model0 = objective(space, timedelta(seconds=30))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(model0, MODEL_PATH)
