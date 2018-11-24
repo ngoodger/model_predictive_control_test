@@ -13,7 +13,7 @@ def run_model_show_frames():
     # Use cpu for inference.
     samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES, SEQ_LEN)
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
-    model = torch.load("my_model.pt")
+    model = torch.load("my_model.pt", map_location="cpu")
     for batch_idx, data in enumerate(dataloader):
         forces, observations = data
         batch_data = {

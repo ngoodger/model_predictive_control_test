@@ -15,7 +15,7 @@ def run_policy_show_frames():
     device = "cpu"
     my_block_sys = bs.BlockSys()
     my_block_sys_target = bs.BlockSys()
-    policy = torch.load("my_policy.pt")
+    policy = torch.load("my_policy.pt", map_location="cpu")
     force_0 = np.zeros([1, 2], dtype=np.float32)
     s0 = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
     s1_target = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 2], dtype=np.float32)
