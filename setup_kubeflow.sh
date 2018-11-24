@@ -22,3 +22,4 @@ ks registry add kubeflow github.com/kubeflow/kubeflow/tree/${VERSION}/kubeflow
 ks pkg install kubeflow/pytorch-job
 ks generate pytorch-operator pytorch-operator
 ks apply cloud -c pytorch-operator
+kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/stable/nvidia-driver-installer/cos/daemonset-preloaded.yaml
