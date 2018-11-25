@@ -116,11 +116,11 @@ if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     if torch.cuda.is_available():
         # Assuming we are using a gpu
-        space = {"learning_rate": 1e-3, "batch_size": 64, "world_size": world_size}
+        space = {"learning_rate": 1e-4, "batch_size": 64, "world_size": world_size}
     else:
         # Assuming we are using a cpu
-        space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
-    policy0 = objective(space, timedelta(minutes=10))
+        space = {"learning_rate": 1e-5, "batch_size": 4, "world_size": world_size}
+    policy0 = objective(space, timedelta(minutes=20))
     rank = dist.get_rank() if world_size > 1 else 0
     torch.save(policy0, POLICY_PATH)
     if rank == 0:
