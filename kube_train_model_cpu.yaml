@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-mpc-test-model-cpu-v12"
+  name: "pytorch-mpc-test-model-cpu-v14"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:7f51d83f686f31304cb8cfbd18378f5dbeffcd1e
+          - image: gcr.io/proud-spring-222310/mpc_test:d962e055ce0f8d2d2f6c4bd74afff2a3c51741af
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
@@ -30,7 +30,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:7f51d83f686f31304cb8cfbd18378f5dbeffcd1e
+          - image: gcr.io/proud-spring-222310/mpc_test:d962e055ce0f8d2d2f6c4bd74afff2a3c51741af
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"

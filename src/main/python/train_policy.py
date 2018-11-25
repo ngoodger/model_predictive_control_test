@@ -1,17 +1,18 @@
 import os.path
 from datetime import datetime, timedelta
 import torch.distributed as dist
+import blob_handler
 
 import block_dataset
 import policy
 import torch
 from torch.utils.data import DataLoader
-from google.cloud import storage
 import json
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
-MODEL_PATH = "my_model.pt"
+INPUT_CNN_PATH = "input_cnn.pt"
+MODEL_PATH = "recurrent_model.pt"
 MODEL_METADATA_PATH = "my_model_metadata.json"
 POLICY_PATH = "my_policy.pt"
 POLICY_METADATA_PATH = "my_policy_metadata.json"
@@ -30,41 +31,30 @@ def objective(space, time_limit=TRAINING_TIME):
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
-    # Always load pre-trained model.
-    model_bucket = os.environ["GCS_BUCKET"]
-    client = storage.Client()
-    bucket = client.get_bucket(model_bucket)
-    blob = bucket.blob(MODEL_PATH)
-    blob.download_to_filename(MODEL_PATH)
+    # Always load pre-trained recurrent model and input_cnn
+    my_blob_handler = blob_handler.BlobHandler(os.environ["GCS_BUCKET"])
+    my_blob_handler.download_blob(MODEL_PATH)
+    my_blob_handler.download_blob(INPUT_CNN_PATH)
     model = torch.load(MODEL_PATH, map_location=device)
+    my_input_cnn = torch.load(INPUT_CNN_PATH, map_location=device)
 
-    policy_bucket = os.environ["GCS_BUCKET"]
-    if POLICY_PATH in list_blob_names(model_bucket):
+    if POLICY_PATH in my_blob_handler.ls_blob():
         print("Loading pre-trained policy.")
-        client = storage.Client()
-        bucket = client.get_bucket(policy_bucket)
-        blob = bucket.blob(POLICY_PATH)
-        blob.download_to_filename(POLICY_PATH)
+        my_blob_handler.download_blob(POLICY_PATH)
         policy0 = torch.load(POLICY_PATH, map_location=device)
     else:
         # policy0 = torch.nn.DataParallel(policy_no_parallel).to(device)
         print("Starting from untrained policy.")
         policy_no_parallel = policy.Policy(
-            layer_1_cnn_filters=16,
-            layer_2_cnn_filters=16,
-            layer_3_cnn_filters=16,
-            layer_4_cnn_filters=32,
-            layer_1_kernel_size=3,
-            layer_2_kernel_size=3,
-            layer_3_kernel_size=3,
-            layer_4_kernel_size=3,
-            force_hidden_layer_size=32,
-            middle_hidden_layer_size=128,
-            device=device,
+            force_hidden_layer_size=32, middle_hidden_layer_size=128, device=device
         )
         policy0 = policy_no_parallel.to(device)
     trainer = policy.PolicyTrainer(
-        learning_rate=learning_rate, policy=policy0, model=model, world_size=world_size
+        learning_rate=learning_rate,
+        input_cnn=my_input_cnn,
+        policy=policy0,
+        model=model,
+        world_size=world_size,
     )
     iteration = 0
     start_time = datetime.now()
@@ -99,17 +89,13 @@ def objective(space, time_limit=TRAINING_TIME):
         "training_time": (datetime.now() - start_train).total_seconds(),
     }
     json_metadata = json.dumps(metadata_dict)
+    rank = dist.get_rank() if world_size > 1 else 0
     with open(POLICY_METADATA_PATH, "w") as f:
         f.write(json_metadata)
-    return policy0
-
-
-def list_blob_names(bucket_name):
-    """Lists all the blob names in the bucket."""
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
-    blob_name_list = [blob.name for blob in bucket.list_blobs()]
-    return blob_name_list
+    torch.save(policy0, POLICY_PATH)
+    if rank == 0:
+        my_blob_handler.upload_blob(POLICY_PATH)
+        my_blob_handler.upload_blob(POLICY_METADATA_PATH)
 
 
 if __name__ == "__main__":
@@ -120,17 +106,7 @@ if __name__ == "__main__":
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-5, "batch_size": 4, "world_size": world_size}
-    policy0 = objective(space, timedelta(minutes=20))
-    rank = dist.get_rank() if world_size > 1 else 0
-    torch.save(policy0, POLICY_PATH)
-    if rank == 0:
-        policy_bucket = os.environ["GCS_BUCKET"]
-        client = storage.Client()
-        bucket = client.get_bucket(policy_bucket)
-        blob = bucket.blob(POLICY_PATH)
-        blob.upload_from_filename(POLICY_PATH)
-        blob = bucket.blob(POLICY_METADATA_PATH)
-        blob.upload_from_filename(POLICY_METADATA_PATH)
+    objective(space, timedelta(minutes=10))
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:

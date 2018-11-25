@@ -17,7 +17,7 @@ def hash_model():
 
 
 # Can not easily add as model function because it is not supported by data parallel.
-def forward_sequence(model, batch_data, use_label_output=False):
+def forward_sequence(input_cnn, recurrent_model, batch_data, use_label_output=False):
     logits_list = []
     out_list = []
     observation = batch_data["observations"][0]
@@ -25,12 +25,18 @@ def forward_sequence(model, batch_data, use_label_output=False):
         force_0 = batch_data["forces"][i]
         force_1 = batch_data["forces"][i + 1]
         if i == 0:
-            logits, out, recurrent_state = model.forward(
-                observation, None, force_0, force_1, first_iteration=True
+            out_input_cnn_flat = input_cnn.forward(observation)
+            logits, out, recurrent_state = recurrent_model.forward(
+                out_input_cnn_flat, None, force_0, force_1, first_iteration=True
             )
         else:
-            logits, out, recurrent_state = model.forward(
-                observation, recurrent_state, force_0, force_1, first_iteration=False
+            out_input_cnn_flat = input_cnn.forward(observation)
+            logits, out, recurrent_state = recurrent_model.forward(
+                out_input_cnn_flat,
+                recurrent_state,
+                force_0,
+                force_1,
+                first_iteration=False,
             )
         if use_label_output:
             observation = batch_data["observations"][i + 1]
@@ -41,9 +47,14 @@ def forward_sequence(model, batch_data, use_label_output=False):
     return logits_list, out_list
 
 
-class ModelTrainer(trainer.BaseTrainer):
-    def __init__(self, learning_rate, model, world_size):
-        super(ModelTrainer, self).__init__(learning_rate, model, world_size)
+class RecurrentModelTrainer(trainer.BaseTrainer):
+    def __init__(self, learning_rate, input_cnn, model, world_size):
+        parameters = list(input_cnn.parameters()) + list(model.parameters())
+        self.model = model
+        self.input_cnn = input_cnn
+        super(RecurrentModelTrainer, self).__init__(
+            learning_rate, parameters, world_size
+        )
 
     def get_criterion(self):
         criterion = nn.BCEWithLogitsLoss()
@@ -52,7 +63,7 @@ class ModelTrainer(trainer.BaseTrainer):
     def get_loss(self, batch_data):
         loss = 0.
         logits_list, _ = forward_sequence(
-            self.nn_module, batch_data, use_label_output=True
+            self.input_cnn, self.model, batch_data, use_label_output=True
         )
         loss = sum(
             self.criterion(
@@ -66,7 +77,7 @@ class ModelTrainer(trainer.BaseTrainer):
         return loss
 
 
-class Model(nn.Module):
+class RecurrentModel(nn.Module):
     def __init__(
         self,
         layer_1_cnn_filters,
@@ -86,7 +97,7 @@ class Model(nn.Module):
         force_add determines whether the force is added or concatonated.
         """
 
-        super(Model, self).__init__()
+        super(RecurrentModel, self).__init__()
         self.layer_1_cnn_filters = layer_1_cnn_filters
         self.layer_2_cnn_filters = layer_2_cnn_filters
         self.layer_3_cnn_filters = layer_3_cnn_filters
@@ -98,8 +109,7 @@ class Model(nn.Module):
         self.middle_hidden_layer_size = middle_hidden_layer_size
         self.recurrent_layer_size = recurrent_layer_size
         self.device = device
-        # This should be done differently.
-        # We actually want to only have 1 set of initial conditions parameters that we train.
+
         self.init_recurrent_state = (
             torch.nn.Parameter(
                 torch.rand(LSTM_DEPTH, 1, middle_hidden_layer_size), requires_grad=True
@@ -114,46 +124,7 @@ class Model(nn.Module):
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
         )
         self.middle_layer_size = middle_layer_size
-        self.layer_cnn_0 = nn.Sequential(
-            nn.Conv3d(
-                IMAGE_DEPTH,
-                layer_1_cnn_filters,
-                kernel_size=layer_1_kernel_size,
-                stride=[1, 1, 1],
-                padding=int(layer_1_kernel_size / 2),
-            ),
-            # nn.BatchNorm2d(2),
-        )
-        self.layer_cnn_1 = nn.Sequential(
-            nn.Conv3d(
-                layer_1_cnn_filters,
-                layer_2_cnn_filters,
-                kernel_size=layer_2_kernel_size,
-                stride=[STRIDE, STRIDE, 1],
-                padding=int(layer_2_kernel_size / 2),
-            ),
-            # nn.BatchNorm2d(4),
-        )
-        self.layer_cnn_2 = nn.Sequential(
-            nn.Conv3d(
-                layer_2_cnn_filters,
-                layer_3_cnn_filters,
-                kernel_size=layer_3_kernel_size,
-                stride=[STRIDE, STRIDE, STRIDE],
-                padding=int(layer_3_kernel_size / 2),
-            ),
-            # nn.BatchNorm2d(4),
-        )
-        self.layer_cnn_3 = nn.Sequential(
-            nn.Conv3d(
-                layer_3_cnn_filters,
-                layer_4_cnn_filters,
-                kernel_size=layer_4_kernel_size,
-                stride=[STRIDE, STRIDE, STRIDE],
-                padding=int(layer_4_kernel_size / 2),
-            ),
-            # nn.BatchNorm2d(4),
-        )
+
         self.layer_tcnn_0 = nn.Sequential(
             nn.ConvTranspose3d(
                 layer_4_cnn_filters,
@@ -214,29 +185,20 @@ class Model(nn.Module):
         self.leaky_relu = nn.LeakyReLU()
 
     def forward(
-        self, observation, last_recurrent_state, force_0, force_1, first_iteration=False
+        self,
+        out_input_cnn_flat,
+        last_recurrent_state,
+        force_0,
+        force_1,
+        first_iteration=False,
     ):
 
+        batch_size = force_0.size(0)
         out_force_recurrent = self.layer_force_recurrent(
             torch.cat((force_0, force_1), 1)
         )
 
-        # On the first iteration of the RNN
-        # use the learned self.init_recurrent_tate parameter as the initial recurrent state.
-        # Only feed through the initial frame on the first iteration since the model must
-        # rely on latent state to predict future outputs..
-        x = observation
-        batch_size = x.size(0)
-        out_cnn_0_act = self.layer_cnn_0(x)
-        out_cnn_0 = self.leaky_relu(out_cnn_0_act)
-        out_cnn_1_act = self.layer_cnn_1(out_cnn_0)
-        out_cnn_1 = self.leaky_relu(out_cnn_1_act)
-        out_cnn_2_act = self.layer_cnn_2(out_cnn_1)
-        out_cnn_2 = self.leaky_relu(out_cnn_2_act)
-        out_cnn_3_act = self.layer_cnn_3(out_cnn_2)
-        out_cnn_3 = self.leaky_relu(out_cnn_3_act)
-        out_input_image_flat = out_cnn_3.view(out_cnn_3.size(0), -1)
-        out_cnn_recurrent = self.layer_cnn_recurrent(out_input_image_flat)
+        out_cnn_recurrent = self.layer_cnn_recurrent(out_input_cnn_flat)
         if first_iteration:
             # TODO Shouldn't need to use contiguous here as it is a view of contiguous memory.
             last_recurrent_state = tuple(
@@ -260,13 +222,22 @@ class Model(nn.Module):
             self.middle_layer_image_width,
             1,
         )
+        """
+        Old implementation with skip connections
         out_tcnn_0_act = self.layer_tcnn_0(torch.add(out_image_hidden, out_cnn_3))
-
         out_tcnn_0 = self.leaky_relu(out_tcnn_0_act)
         out_tcnn_1_act = self.layer_tcnn_1(torch.add(out_tcnn_0, out_cnn_2))
         out_tcnn_1 = self.leaky_relu(out_tcnn_1_act)
         out_tcnn_2_act = self.layer_tcnn_2(torch.add(out_tcnn_1, out_cnn_1))
         out_tcnn_2 = self.leaky_relu(out_tcnn_2_act)
         out_logits = self.layer_tcnn_3(torch.add(out_tcnn_2, out_cnn_0))
+        """
+        out_tcnn_0_act = self.layer_tcnn_0(out_image_hidden)
+        out_tcnn_0 = self.leaky_relu(out_tcnn_0_act)
+        out_tcnn_1_act = self.layer_tcnn_1(out_tcnn_0)
+        out_tcnn_1 = self.leaky_relu(out_tcnn_1_act)
+        out_tcnn_2_act = self.layer_tcnn_2(out_tcnn_1)
+        out_tcnn_2 = self.leaky_relu(out_tcnn_2_act)
+        out_logits = self.layer_tcnn_3(out_tcnn_2)
         out_sigmoid = self.layer_sigmoid_out(out_logits)
         return (out_logits, out_sigmoid, out_recurrent_state)

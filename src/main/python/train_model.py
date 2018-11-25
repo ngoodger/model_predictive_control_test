@@ -1,16 +1,18 @@
 # import os.path
 from datetime import datetime, timedelta
+import blob_handler
+
 
 # from tensorboardX import SummaryWriter
 import torch.distributed as dist
 
 import json
+import input_cnn
 
 # import block_sys # import block_sys as bs
 import block_dataset
 import model
 import os
-from google.cloud import storage
 
 # import pandas as pd
 import torch
@@ -20,8 +22,9 @@ from torch.utils.data import DataLoader
 
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
-MODEL_PATH = "my_model.pt"
-MODEL_METADATA_PATH = "my_model_metadata.json"
+INPUT_CNN_PATH = "input_cnn.pt"
+MODEL_PATH = "recurrent_model.pt"
+MODEL_METADATA_PATH = "recurrent_model_metadata.json"
 SEQ_LEN = 4
 SAVE_INTERVAL = 100
 PRINT_INTERVAL = 100
@@ -39,18 +42,14 @@ def objective(space, time_limit=TRAINING_TIME):
     dataloader = DataLoader(
         samples_dataset, batch_size=batch_size, shuffle=False, num_workers=4
     )
-
-    model_bucket = os.environ["GCS_BUCKET"]
-    if MODEL_PATH in list_blob_names(model_bucket):
-        print("Loading pre-existing model.")
-        client = storage.Client()
-        bucket = client.get_bucket(model_bucket)
-        blob = bucket.blob(MODEL_PATH)
-        blob.download_to_filename(MODEL_PATH)
+    my_blob_handler = blob_handler.BlobHandler(os.environ["GCS_BUCKET"])
+    if MODEL_PATH in my_blob_handler.ls_blob():
+        print("Loading pre-existing recurrent model.")
+        my_blob_handler.download_blob(MODEL_PATH)
         model0 = torch.load(MODEL_PATH, map_location=device)
     else:
-        print("Starting from untrained model.")
-        model_no_parallel = model.Model(
+        print("Starting from untrained recurrent model.")
+        model_no_parallel = model.RecurrentModel(
             layer_1_cnn_filters=16,
             layer_2_cnn_filters=16,
             layer_3_cnn_filters=16,
@@ -65,9 +64,28 @@ def objective(space, time_limit=TRAINING_TIME):
             device=device,
         )
         model0 = model_no_parallel.to(device)
+    if INPUT_CNN_PATH in my_blob_handler.ls_blob():
+        print("Loading pre-existing input cnn")
+        my_blob_handler.download_blob(INPUT_CNN_PATH)
+        my_input_cnn = torch.load(INPUT_CNN_PATH, map_location=device)
+    else:
+        print("Starting from untrained input cnn.")
+        my_input_cnn = input_cnn.InputCNN(
+            layer_1_cnn_filters=16,
+            layer_2_cnn_filters=16,
+            layer_3_cnn_filters=16,
+            layer_4_cnn_filters=32,
+            layer_1_kernel_size=3,
+            layer_2_kernel_size=3,
+            layer_3_kernel_size=3,
+            layer_4_kernel_size=3,
+        )
 
-    trainer = model.ModelTrainer(
-        learning_rate=learning_rate, model=model0, world_size=world_size
+    trainer = model.RecurrentModelTrainer(
+        learning_rate=learning_rate,
+        input_cnn=my_input_cnn,
+        model=model0,
+        world_size=world_size,
     )
     iteration = 0
     start = datetime.now()
@@ -101,22 +119,23 @@ def objective(space, time_limit=TRAINING_TIME):
             break
         if iteration % SAVE_INTERVAL == 0:
             torch.save(model0, MODEL_PATH)
+            torch.save(my_input_cnn, INPUT_CNN_PATH)
     metadata_dict = {
         "mean_loss": mean_loss,
         "training_time": (datetime.now() - start_train).total_seconds(),
     }
     json_metadata = json.dumps(metadata_dict)
+    rank = dist.get_rank() if world_size > 1 else 0
     with open(MODEL_METADATA_PATH, "w") as f:
         f.write(json_metadata)
-    return model0
-
-
-def list_blob_names(bucket_name):
-    """Lists all the blob names in the bucket."""
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
-    blob_name_list = [blob.name for blob in bucket.list_blobs()]
-    return blob_name_list
+    torch.save(model0, MODEL_PATH)
+    torch.save(my_input_cnn, INPUT_CNN_PATH)
+    # From master save to storage bucket.
+    if rank == 0:
+        print("Saving model to storage bucket")
+        my_blob_handler.upload_blob(INPUT_CNN_PATH)
+        my_blob_handler.upload_blob(MODEL_PATH)
+        my_blob_handler.upload_blob(MODEL_METADATA_PATH)
 
 
 if __name__ == "__main__":
@@ -134,19 +153,7 @@ if __name__ == "__main__":
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
-    model0 = objective(space, timedelta(minutes=20))
-    rank = dist.get_rank() if world_size > 1 else 0
-    torch.save(model0, MODEL_PATH)
-    # On master save to storage bucket.
-    if rank == 0:
-        print("Saving model to storage bucket")
-        model_bucket = os.environ["GCS_BUCKET"]
-        client = storage.Client()
-        bucket = client.get_bucket(model_bucket)
-        blob = bucket.blob(MODEL_PATH)
-        blob.upload_from_filename(MODEL_PATH)
-        blob = bucket.blob(MODEL_METADATA_PATH)
-        blob.upload_from_filename(MODEL_METADATA_PATH)
+    objective(space, timedelta(minutes=10))
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:

@@ -12,16 +12,15 @@ PRINT_LOSS_MEAN_INTERVAL = 100
 class BaseTrainer(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, learning_rate, nn_module, world_size):
+    def __init__(self, learning_rate, parameters, world_size):
         self.iteration = 0
-        self.nn_module = nn_module
-        self.optimizer = optim.Adam(self.nn_module.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(parameters, lr=learning_rate)
         self.loss_window = np.ones(LOSS_WINDOW_SIZE)
         self.loss_window_idx = 0
         self.criterion = self.get_criterion()
         self.loss_window_full = False
         self.world_size = world_size
-        print(self.nn_module)
+        self.parameters = parameters
 
     @abstractmethod
     def get_criterion(self):
@@ -34,7 +33,7 @@ class BaseTrainer(object):
         pass
 
     def average_gradients(self):
-        for param in self.nn_module.parameters():
+        for param in self.parameters():
             dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM, group=0)
             param.grad.data /= self.world_size
 
