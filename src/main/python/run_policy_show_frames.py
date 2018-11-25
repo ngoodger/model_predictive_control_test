@@ -16,6 +16,7 @@ def run_policy_show_frames():
     my_block_sys = bs.BlockSys()
     my_block_sys_target = bs.BlockSys()
     policy = torch.load("my_policy.pt", map_location="cpu")
+    policy = torch.load("input_cnn.pt", map_location="cpu")
     force_0 = np.zeros([1, 2], dtype=np.float32)
     s0 = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
     s1_target = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 2], dtype=np.float32)
@@ -43,17 +44,23 @@ def run_policy_show_frames():
         force_0_tensor = torch.from_numpy(force_0).to(device)
         start = torch.from_numpy(s0).to(device)
         target = torch.from_numpy(s1_target).to(device)
+        out_target_cnn_flat = self.input_cnn.forward(target)
+        out_start_cnn_flat = self.input_cnn.forward(start)
         # batch_data = {"start": start, "target": target, "force_0": force_0_tensor}
         if i == 0:
-            force_1, out_cnn_target = policy.forward(
-                force_0_tensor, start, target, first_iteration=True
+            force_1, out_target_cnn_layer = policy.forward(
+                force_0_tensor,
+                out_start_cnn_flat,
+                out_target_cnn_flat,
+                None,
+                first_iteration=True,
             )
         else:
             force_1, _ = policy.forward(
                 force_0_tensor,
                 start,
                 target,
-                out_cnn_target=out_cnn_target,
+                out_target_cnn_layer=out_target_cnn_layer,
                 first_iteration=False,
             )
 

@@ -13,7 +13,8 @@ def run_model_show_frames():
     # Use cpu for inference.
     samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES, SEQ_LEN)
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
-    model = torch.load("my_model.pt", map_location="cpu")
+    my_input_cnn = torch.load("input_cnn.pt", map_location="cpu")
+    model = torch.load("recurrent_model.pt", map_location="cpu")
     for batch_idx, data in enumerate(dataloader):
         forces, observations = data
         batch_data = {
@@ -21,7 +22,7 @@ def run_model_show_frames():
             "observations": observations,
             "seq_len": SEQ_LEN,
         }
-        _, y1_list = forward_sequence(model, batch_data)
+        _, y1_list = forward_sequence(my_input_cnn, model, batch_data)
         for seq_idx in range(SEQ_LEN - 1):
             for i in range(4):
                 s0_frame = observations[seq_idx + 1][0, :, :, :, i].data.numpy()
