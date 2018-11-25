@@ -36,7 +36,8 @@ class PolicyTrainer(trainer.BaseTrainer):
                     out_target_cnn_layer=None,
                     first_iteration=True,
                 )
-                force_1 = force_1_unscaled * FORCE_SCALE * 0.5
+                # force_1 = force_1_unscaled * FORCE_SCALE * 0.5
+                force_1 = force_1_unscaled
                 logits, out, recurrent_state = self.model.forward(
                     out_start_cnn_flat, None, force_0, force_1, first_iteration=True
                 )
@@ -49,7 +50,8 @@ class PolicyTrainer(trainer.BaseTrainer):
                     out_target_cnn_layer=out_target_cnn_layer,
                     first_iteration=False,
                 )
-                force_1 = force_1_unscaled * FORCE_SCALE * 0.5
+                # force_1 = force_1_unscaled * FORCE_SCALE * 0.5
+                force_1 = force_1_unscaled
                 logits, out, recurrent_state = self.model.forward(
                     out_start_cnn_flat,
                     recurrent_state,
