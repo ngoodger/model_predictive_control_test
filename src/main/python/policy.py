@@ -75,6 +75,7 @@ class Policy(nn.Module):
         self.device = device
         layer_4_cnn_filters = 32
         LAYERS = 4
+
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
         middle_layer_size = int(
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
@@ -93,7 +94,9 @@ class Policy(nn.Module):
             nn.Linear(middle_hidden_layer_size, middle_hidden_layer_size),
             nn.LeakyReLU(),
         )
-        self.layer_policy = nn.Linear(middle_hidden_layer_size, 2)
+        self.layer_policy = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, 2), nn.Tanh()
+        )
 
     def forward(
         self,
