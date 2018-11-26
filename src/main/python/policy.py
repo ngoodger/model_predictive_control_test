@@ -5,6 +5,7 @@ from torch import nn
 
 TARGET_HORIZON = 3
 STRIDE = 2
+OUTPUT_GAIN = 0.5
 
 
 class PolicyTrainer(trainer.BaseTrainer):
@@ -76,6 +77,9 @@ class Policy(nn.Module):
         layer_4_cnn_filters = 32
         LAYERS = 4
 
+        # apply output gain to keep in the range -0.5 to 0.5.
+        # (Also within model training range.)
+        self.output_gain = torch.Tensor([OUTPUT_GAIN]).to(device)
         self.middle_layer_image_width = int(GRID_SIZE / (2 ** (LAYERS - 1)))
         middle_layer_size = int(
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
@@ -120,5 +124,5 @@ class Policy(nn.Module):
             out_target_cnn_layer, torch.add(out_layer_start_cnn, out_force)
         )
         out_policy_hidden = self.layer_policy_hidden(combined.view(batch_size, -1))
-        out_policy = self.layer_policy(out_policy_hidden)
+        out_policy = self.output_gain * self.layer_policy(out_policy_hidden)
         return out_policy, out_target_cnn_layer
