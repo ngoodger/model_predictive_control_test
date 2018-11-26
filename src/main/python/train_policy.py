@@ -102,10 +102,10 @@ if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
     if torch.cuda.is_available():
         # Assuming we are using a gpu
-        space = {"learning_rate": 1e-3, "batch_size": 64, "world_size": world_size}
+        space = {"learning_rate": 1e-3, "batch_size": 128, "world_size": world_size}
     else:
         # Assuming we are using a cpu
-        space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
+        space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
     objective(space, timedelta(hours=1))
     # model = torch.load('my_model.pt')
 
