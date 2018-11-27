@@ -110,6 +110,12 @@ def objective(space, time_limit=TRAINING_TIME):
 
 if __name__ == "__main__":
     world_size = int(os.environ["WORLD_SIZE"])
+    if world_size > 1:
+        # If cuda is available we assume that we are using it.
+        if torch.cuda.is_available():
+            dist.init_process_group("nccl")
+        else:
+            dist.init_process_group("tcp")
     if torch.cuda.is_available():
         # Assuming we are using a gpu
         space = {"learning_rate": 1e-3, "batch_size": 128, "world_size": world_size}
