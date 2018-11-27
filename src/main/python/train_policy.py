@@ -17,7 +17,7 @@ MODEL_METADATA_PATH = "my_model_metadata.json"
 POLICY_PATH = "my_policy.pt"
 POLICY_METADATA_PATH = "my_policy_metadata.json"
 PRINT_INTERVAL = 100
-SAVE_INTERVAL = 100
+SAVE_INTERVAL = 1000
 
 
 def objective(space, time_limit=TRAINING_TIME):
@@ -83,6 +83,8 @@ def objective(space, time_limit=TRAINING_TIME):
             break
         if iteration % SAVE_INTERVAL == 0:
             torch.save(policy0, POLICY_PATH)
+            my_blob_handler.upload_blob(POLICY_PATH)
+            my_blob_handler.upload_blob(POLICY_METADATA_PATH)
     # return mean_loss
     metadata_dict = {
         "mean_loss": mean_loss,

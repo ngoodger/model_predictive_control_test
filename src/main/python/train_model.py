@@ -26,7 +26,7 @@ INPUT_CNN_PATH = "input_cnn.pt"
 MODEL_PATH = "recurrent_model.pt"
 MODEL_METADATA_PATH = "recurrent_model_metadata.json"
 SEQ_LEN = 4
-SAVE_INTERVAL = 100
+SAVE_INTERVAL = 1000
 PRINT_INTERVAL = 100
 
 
@@ -120,6 +120,11 @@ def objective(space, time_limit=TRAINING_TIME):
         if iteration % SAVE_INTERVAL == 0:
             torch.save(model0, MODEL_PATH)
             torch.save(my_input_cnn, INPUT_CNN_PATH)
+            if rank == 0:
+                print("Saving model to storage bucket")
+                my_blob_handler.upload_blob(INPUT_CNN_PATH)
+                my_blob_handler.upload_blob(MODEL_PATH)
+                my_blob_handler.upload_blob(MODEL_METADATA_PATH)
     metadata_dict = {
         "mean_loss": mean_loss,
         "training_time": (datetime.now() - start_train).total_seconds(),
