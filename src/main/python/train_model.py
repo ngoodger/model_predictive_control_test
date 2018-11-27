@@ -121,6 +121,14 @@ def objective(space, time_limit=TRAINING_TIME):
             torch.save(model0, MODEL_PATH)
             torch.save(my_input_cnn, INPUT_CNN_PATH)
             if rank == 0:
+                metadata_dict = {
+                    "mean_loss": mean_loss,
+                    "training_time": (datetime.now() - start_train).total_seconds(),
+                }
+                json_metadata = json.dumps(metadata_dict)
+                rank = dist.get_rank() if world_size > 1 else 0
+                with open(MODEL_METADATA_PATH, "w") as f:
+                    f.write(json_metadata)
                 print("Saving model to storage bucket")
                 my_blob_handler.upload_blob(INPUT_CNN_PATH)
                 my_blob_handler.upload_blob(MODEL_PATH)

@@ -82,6 +82,14 @@ def objective(space, time_limit=TRAINING_TIME):
         if datetime.now() - start_train > time_limit:
             break
         if iteration % SAVE_INTERVAL == 0:
+            metadata_dict = {
+                "mean_loss": mean_loss,
+                "training_time": (datetime.now() - start_train).total_seconds(),
+            }
+            json_metadata = json.dumps(metadata_dict)
+            rank = dist.get_rank() if world_size > 1 else 0
+            with open(POLICY_METADATA_PATH, "w") as f:
+                f.write(json_metadata)
             torch.save(policy0, POLICY_PATH)
             my_blob_handler.upload_blob(POLICY_PATH)
             my_blob_handler.upload_blob(POLICY_METADATA_PATH)
