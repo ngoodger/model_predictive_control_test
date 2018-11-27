@@ -33,7 +33,7 @@ class BaseTrainer(object):
         pass
 
     def average_gradients(self):
-        for param in self.parameters():
+        for param in self.parameters:
             dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM, group=0)
             param.grad.data /= self.world_size
 
