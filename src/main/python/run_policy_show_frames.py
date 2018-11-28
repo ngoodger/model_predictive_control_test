@@ -6,6 +6,7 @@ import torch
 from block_sys import FORCE_SCALE, FRAMES, GRID_SIZE, IMAGE_DEPTH
 
 MEAN_S0 = 0.
+USE_POLICY_SPECIFIC_INPUT_CNN = False
 
 
 def run_policy_show_frames():
@@ -17,7 +18,12 @@ def run_policy_show_frames():
     my_block_sys_target = bs.BlockSys()
     model = torch.load("recurrent_model.pt", map_location=device)
     policy = torch.load("my_policy.pt", map_location=device)
-    input_cnn = torch.load("input_cnn.pt", map_location=device)
+    if USE_POLICY_SPECIFIC_INPUT_CNN:
+        input_cnn = torch.load("policy_input_cnn.pt", map_location=device)
+        model_input_cnn = torch.load("input_cnn.pt", map_location=device)
+    else:
+        model_input_cnn = torch.load("input_cnn.pt", map_location=device)
+        model_input_cnn = input_cnn
     force_0 = np.zeros([1, 2], dtype=np.float32)
     s0 = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
     s1_target = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 4], dtype=np.float32)
@@ -46,6 +52,7 @@ def run_policy_show_frames():
         target = torch.from_numpy(s1_target).to(device)
         out_target_cnn_flat = input_cnn.forward(target)
         out_start_cnn_flat = input_cnn.forward(start)
+        out_start_cnn_flat_model = model_input_cnn.forward(start)
         # batch_data = {"start": start, "target": target, "force_0": force_0_tensor}
         if i == 0:
             force_1_tensor, out_target_cnn_layer = policy.forward(
@@ -58,7 +65,7 @@ def run_policy_show_frames():
             # DELETE THIS
             # force_1_tensor = force_0_tensor
             logits, out, recurrent_state = model.forward(
-                out_start_cnn_flat,
+                out_start_cnn_flat_model,
                 None,
                 force_0_tensor,
                 force_1_tensor,
@@ -75,7 +82,7 @@ def run_policy_show_frames():
             # DELETE THIS
             # force_1_tensor = force_0_tensor
             logits, out, recurrent_state = model.forward(
-                out_start_cnn_flat,
+                out_start_cnn_flat_model,
                 recurrent_state,
                 force_0_tensor,
                 force_1_tensor,

@@ -1,20 +1,37 @@
 import torch
 import trainer
 from block_sys import GRID_SIZE
+import block_sys
 from torch import nn
 
-TARGET_HORIZON = 2
+TARGET_HORIZON = 3
 STRIDE = 2
 OUTPUT_GAIN = 0.5
+PRINT_OUTPUT = False
 
 
 class PolicyTrainer(trainer.BaseTrainer):
-    def __init__(self, learning_rate, input_cnn, policy, model, world_size):
+    def __init__(
+        self,
+        learning_rate,
+        input_cnn,
+        policy,
+        model_input_cnn,
+        model,
+        world_size,
+        train_input_cnn=False,
+    ):
         # We only train policy here.
         # model and input_cnn must be trained by training model.
-        parameters = policy.parameters()
+        if train_input_cnn:
+            print("Training Policy InputCNN parameters")
+            parameters = list(policy.parameters()) + list(input_cnn.parameters())
+        else:
+            print("Not training Policy InputCNN parameters")
+            parameters = list(policy.parameters())
         super(PolicyTrainer, self).__init__(learning_rate, parameters, world_size)
         self.input_cnn = input_cnn
+        self.model_input_cnn = model_input_cnn
         self.policy = policy
         self.model = model
 
@@ -27,9 +44,11 @@ class PolicyTrainer(trainer.BaseTrainer):
         start = batch_data["start"]
         y = batch_data["target"]
         out_target_cnn_flat = self.input_cnn.forward(y)
+        loss = 0.
         for i in range(TARGET_HORIZON):
             if i == 0:
                 out_start_cnn_flat = self.input_cnn.forward(start)
+                out_start_cnn_flat_model = self.model_input_cnn.forward(start)
                 force_1_unscaled, out_target_cnn_layer = self.policy.forward(
                     force_0,
                     out_start_cnn_flat,
@@ -39,10 +58,15 @@ class PolicyTrainer(trainer.BaseTrainer):
                 )
                 force_1 = force_1_unscaled
                 logits, out, recurrent_state = self.model.forward(
-                    out_start_cnn_flat, None, force_0, force_1, first_iteration=True
+                    out_start_cnn_flat_model,
+                    None,
+                    force_0,
+                    force_1,
+                    first_iteration=True,
                 )
             else:
                 out_start_cnn_flat = self.input_cnn.forward(out)
+                out_start_cnn_flat_model = self.model_input_cnn.forward(start)
                 force_1_unscaled, _ = self.policy.forward(
                     force_0,
                     out_start_cnn_flat,
@@ -52,16 +76,20 @@ class PolicyTrainer(trainer.BaseTrainer):
                 )
                 force_1 = force_1_unscaled
                 logits, out, recurrent_state = self.model.forward(
-                    out_start_cnn_flat,
+                    out_start_cnn_flat_model,
                     recurrent_state,
                     force_0,
                     force_1,
                     first_iteration=False,
                 )
             force_0 = force_1
-        logits_flat = logits.reshape([logits.size(0), -1])
-        y_flat = y.reshape([y.size(0), -1])
-        loss = self.criterion(logits_flat, y_flat)
+            logits_flat = logits.reshape([logits.size(0), -1])
+            y_flat = y.reshape([y.size(0), -1])
+            if PRINT_OUTPUT:
+                for i in range(4):
+                    block_sys.render(out[0, 0, :, :, i].data.numpy())
+                    block_sys.render(y[0, 0, :, :, i].data.numpy())
+            loss += self.criterion(logits_flat, y_flat)
         return loss
 
 
