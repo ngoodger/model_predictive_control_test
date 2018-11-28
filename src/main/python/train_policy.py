@@ -53,7 +53,7 @@ def objective(space, time_limit=TRAINING_TIME):
         )
         policy0 = policy_no_parallel.to(device)
     if USE_POLICY_SPECIFIC_INPUT_CNN:
-        if IINPUT_CNN_PATH in my_blob_handler.ls_blob():
+        if INPUT_CNN_PATH in my_blob_handler.ls_blob():
             print("Loading pre-existing input cnn")
             my_blob_handler.download_blob(INPUT_CNN_PATH)
             my_input_cnn = torch.load(INPUT_CNN_PATH, map_location=device)
