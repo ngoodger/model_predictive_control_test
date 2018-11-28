@@ -18,11 +18,12 @@ def run_policy_show_frames():
     my_block_sys_target = bs.BlockSys()
     model = torch.load("recurrent_model.pt", map_location=device)
     policy = torch.load("my_policy.pt", map_location=device)
+    model_input_cnn = torch.load("input_cnn.pt", map_location=device)
     if USE_POLICY_SPECIFIC_INPUT_CNN:
         input_cnn = torch.load("policy_input_cnn.pt", map_location=device)
-        model_input_cnn = torch.load("input_cnn.pt", map_location=device)
+        model_input_cnn = torch.load("policy_input_cnn.pt", map_location=device)
     else:
-        model_input_cnn = torch.load("input_cnn.pt", map_location=device)
+        input_cnn = torch.load("input_cnn.pt", map_location=device)
         model_input_cnn = input_cnn
     force_0 = np.zeros([1, 2], dtype=np.float32)
     s0 = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
