@@ -4,7 +4,9 @@ import torch
 from torch.utils.data import DataLoader
 from model import forward_sequence
 
-SEQ_LEN = 10
+PRINT_SIM = True
+PRINT_MODEL = True
+SEQ_LEN = 100
 
 
 def run_model_show_frames():
@@ -24,18 +26,20 @@ def run_model_show_frames():
         }
         _, y1_list = forward_sequence(my_input_cnn, model, batch_data)
         for seq_idx in range(SEQ_LEN - 1):
-            for i in range(4):
-                s0_frame = observations[seq_idx + 1][0, :, :, :, i].data.numpy()
-                bs.render(
-                    s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
-                    "_{}_{}".format(str(seq_idx), str(i) + "_target"),
-                )
-            for i in range(bs.FRAMES):
-                y1_frame = y1_list[seq_idx][0, :, :, :, i].data.numpy()
-                bs.render(
-                    y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
-                    "_{}_{}".format(str(seq_idx), str(i) + "_out"),
-                )
+            if PRINT_SIM:
+                for i in range(4):
+                    s0_frame = observations[seq_idx + 1][0, :, :, :, i].data.numpy()
+                    bs.render(
+                        s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
+                        "_{}_{}".format(str(seq_idx), str(i) + "_target"),
+                    )
+            if PRINT_MODEL:
+                for i in range(bs.FRAMES):
+                    y1_frame = y1_list[seq_idx][0, :, :, :, i].data.numpy()
+                    bs.render(
+                        y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
+                        "_{}_{}".format(str(seq_idx), str(i) + "_out"),
+                    )
 
 
 if __name__ == "__main__":

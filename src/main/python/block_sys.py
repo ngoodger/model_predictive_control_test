@@ -11,7 +11,7 @@ BLOCK_SIZE_HALF = int(round(BLOCK_SIZE / 2))
 BLOCK_MASS = 0.1
 FRICTION = 0.01
 TIMESTEP = 1e-3
-FORCE_SCALE = 100000.
+FORCE_SCALE = 200000.
 BATCH_SIZE = 64
 DEFAULT_RENDER_PORT = 8123
 FRAME_DIR = "frames"
@@ -80,12 +80,20 @@ class BlockSys:
         """
         self.vx += ((fx * TIMESTEP) / BLOCK_MASS) - self.vx * FRICTION
         # Bounce off wall
-        if (self.x < BLOCK_SIZE_HALF) or self.x > (GRID_SIZE - BLOCK_SIZE_HALF):
+        if self.x < BLOCK_SIZE_HALF:
+            self.x = BLOCK_SIZE_HALF
+            self.vx = -self.vx
+        if self.x > (GRID_SIZE - BLOCK_SIZE_HALF):
+            self.x = GRID_SIZE - BLOCK_SIZE_HALF
             self.vx = -self.vx
         self.x += self.vx * TIMESTEP
         self.vy += ((fy * TIMESTEP) / BLOCK_MASS) - self.vy * FRICTION
         # Bounce off wall
-        if (self.y < BLOCK_SIZE_HALF) or self.y > (GRID_SIZE - BLOCK_SIZE_HALF):
+        if self.y < BLOCK_SIZE_HALF:
+            self.v = BLOCK_SIZE_HALF
+            self.vy = -self.vy
+        if self.y > (GRID_SIZE - BLOCK_SIZE_HALF):
+            self.v = GRID_SIZE - BLOCK_SIZE_HALF
             self.vy = -self.vy
         self.y += self.vy * TIMESTEP
         self._rasterize()
