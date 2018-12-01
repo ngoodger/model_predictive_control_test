@@ -13,7 +13,7 @@ import json
 USE_POLICY_SPECIFIC_INPUT_CNN = False
 TRAINING_ITERATIONS = 100000000
 TRAINING_TIME = timedelta(minutes=20)
-INPUT_CNN_PATH = "policy_input_cnn.pt"
+POLICY_INPUT_CNN_PATH = "policy_input_cnn.pt"
 MODEL_INPUT_CNN_PATH = "input_cnn.pt"
 MODEL_PATH = "recurrent_model.pt"
 MODEL_METADATA_PATH = "my_model_metadata.json"
@@ -55,8 +55,8 @@ def objective(space, time_limit=TRAINING_TIME):
     if USE_POLICY_SPECIFIC_INPUT_CNN:
         if INPUT_CNN_PATH in my_blob_handler.ls_blob():
             print("Loading pre-existing input cnn")
-            my_blob_handler.download_blob(INPUT_CNN_PATH)
-            my_input_cnn = torch.load(INPUT_CNN_PATH, map_location=device)
+            my_blob_handler.download_blob(POLICY_INPUT_CNN_PATH)
+            my_input_cnn = torch.load(POLICY_INPUT_CNN_PATH, map_location=device)
         else:
             print("Starting from untrained input cnn.")
             my_input_cnn = input_cnn.InputCNN(
@@ -70,8 +70,8 @@ def objective(space, time_limit=TRAINING_TIME):
                 layer_4_kernel_size=3,
             )
     else:
-        my_blob_handler.download_blob(INPUT_CNN_PATH)
-        my_input_cnn = torch.load(INPUT_CNN_PATH, map_location=device)
+        my_blob_handler.download_blob(MODEL_INPUT_CNN_PATH)
+        my_input_cnn = torch.load(MODEL_INPUT_CNN_PATH, map_location=device)
 
     trainer = policy.PolicyTrainer(
         learning_rate=learning_rate,
@@ -116,9 +116,10 @@ def objective(space, time_limit=TRAINING_TIME):
             rank = dist.get_rank() if world_size > 1 else 0
             with open(POLICY_METADATA_PATH, "w") as f:
                 f.write(json_metadata)
-            torch.save(my_input_cnn, INPUT_CNN_PATH)
+            if USE_POLICY_SPECIFIC_INPUT_CNN:
+                torch.save(my_input_cnn, POLICY_INPUT_CNN_PATH)
+                my_blob_handler.upload_blob(POLICY_INPUT_CNN_PATH)
             torch.save(policy0, POLICY_PATH)
-            my_blob_handler.upload_blob(INPUT_CNN_PATH)
             my_blob_handler.upload_blob(POLICY_PATH)
             my_blob_handler.upload_blob(POLICY_METADATA_PATH)
     # return mean_loss

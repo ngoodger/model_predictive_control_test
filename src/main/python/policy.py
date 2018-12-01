@@ -3,8 +3,9 @@ import trainer
 from block_sys import GRID_SIZE
 import block_sys
 from torch import nn
+import numpy as np
 
-TARGET_HORIZON = 3
+TARGET_HORIZON = 1
 STRIDE = 2
 OUTPUT_GAIN = 0.5
 PRINT_OUTPUT = False
@@ -49,14 +50,13 @@ class PolicyTrainer(trainer.BaseTrainer):
             if i == 0:
                 out_start_cnn_flat = self.input_cnn.forward(start)
                 out_start_cnn_flat_model = self.model_input_cnn.forward(start)
-                force_1_unscaled, out_target_cnn_layer = self.policy.forward(
+                force_1, out_target_cnn_layer = self.policy.forward(
                     force_0,
                     out_start_cnn_flat,
                     out_target_cnn_flat,
                     out_target_cnn_layer=None,
                     first_iteration=True,
                 )
-                force_1 = force_1_unscaled
                 logits, out, recurrent_state = self.model.forward(
                     out_start_cnn_flat_model,
                     None,
@@ -66,15 +66,14 @@ class PolicyTrainer(trainer.BaseTrainer):
                 )
             else:
                 out_start_cnn_flat = self.input_cnn.forward(out)
-                out_start_cnn_flat_model = self.model_input_cnn.forward(start)
-                force_1_unscaled, _ = self.policy.forward(
+                out_start_cnn_flat_model = self.model_input_cnn.forward(out)
+                force_1, _ = self.policy.forward(
                     force_0,
                     out_start_cnn_flat,
                     out_target_cnn_flat,
                     out_target_cnn_layer=out_target_cnn_layer,
                     first_iteration=False,
                 )
-                force_1 = force_1_unscaled
                 logits, out, recurrent_state = self.model.forward(
                     out_start_cnn_flat_model,
                     recurrent_state,
@@ -85,11 +84,14 @@ class PolicyTrainer(trainer.BaseTrainer):
             force_0 = force_1
             logits_flat = logits.reshape([logits.size(0), -1])
             y_flat = y.reshape([y.size(0), -1])
+            loss += self.criterion(logits_flat, y_flat)
+            """
             if PRINT_OUTPUT:
                 for i in range(4):
                     block_sys.render(out[0, 0, :, :, i].data.numpy())
                     block_sys.render(y[0, 0, :, :, i].data.numpy())
-            loss += self.criterion(logits_flat, y_flat)
+            """
+        # loss = self.criterion(logits_flat, y_flat)
         return loss
 
 
@@ -112,6 +114,7 @@ class Policy(nn.Module):
         middle_layer_size = int(
             layer_4_cnn_filters * 1 * (self.middle_layer_image_width ** 2)
         )
+        """
         self.middle_layer_size = middle_layer_size
         self.layer_force = nn.Sequential(
             nn.Linear(2, middle_hidden_layer_size), nn.LeakyReLU()
@@ -129,6 +132,17 @@ class Policy(nn.Module):
         self.layer_policy = nn.Sequential(
             nn.Linear(middle_hidden_layer_size, 2), nn.Tanh()
         )
+        """
+
+        self.concat_all_hidden_layer = nn.Sequential(
+            nn.Linear(
+                middle_layer_size + middle_layer_size + 2, middle_hidden_layer_size
+            ),
+            nn.LeakyReLU(),
+        )
+        self.concat_all_layer = nn.Sequential(
+            nn.Linear(middle_hidden_layer_size, 2), nn.Tanh()
+        )
 
     def forward(
         self,
@@ -139,6 +153,7 @@ class Policy(nn.Module):
         first_iteration=False,
     ):
 
+        """
         batch_size = force_0.size(0)
         out_force = self.layer_force(force_0)
 
@@ -153,4 +168,12 @@ class Policy(nn.Module):
         )
         out_policy_hidden = self.layer_policy_hidden(combined.view(batch_size, -1))
         out_policy = self.output_gain * self.layer_policy(out_policy_hidden)
+        """
+
+        concat_temp = torch.cat((force_0, out_start_cnn_flat), 1)
+        concat_all = torch.cat((concat_temp, out_target_cnn_flat), 1)
+        out_hidden = self.concat_all_hidden_layer(concat_all)
+        out_policy = self.concat_all_layer(out_hidden)
+        out_target_cnn_layer = None
+
         return out_policy, out_target_cnn_layer

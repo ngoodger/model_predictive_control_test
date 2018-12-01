@@ -1,5 +1,6 @@
 import abc
 from abc import abstractmethod
+import torch
 
 import numpy as np
 from torch import optim
@@ -41,6 +42,7 @@ class BaseTrainer(object):
         self.optimizer.zero_grad()
         loss = self.get_loss(batch_data)
         loss.backward()
+
         self.loss_window[self.loss_window_idx] = loss.data
         if self.loss_window_idx < LOSS_WINDOW_SIZE - 1:
             self.loss_window_idx += 1
@@ -53,6 +55,12 @@ class BaseTrainer(object):
             mean_loss = np.mean(self.loss_window[: self.loss_window_idx])
         if (self.iteration % PRINT_LOSS_MEAN_INTERVAL) == 0:
             print("loss: {}".format(mean_loss))
+            print("MODEL PARAM")
+            for param in self.policy.parameters():
+                print(param.shape)
+                print(torch.max(param.grad.data)[0])
+                # if param.shape == torch.Size([128, 4]):
+                #    print(param.grad.data)
         # Only average gradients across workers if there is more than 1.
         if self.world_size > 1:
             self.average_gradients()
