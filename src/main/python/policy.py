@@ -1,9 +1,7 @@
 import torch
 import trainer
 from block_sys import GRID_SIZE
-import block_sys
 from torch import nn
-import numpy as np
 
 TARGET_HORIZON = 1
 STRIDE = 2
