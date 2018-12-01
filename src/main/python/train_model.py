@@ -165,8 +165,8 @@ if __name__ == "__main__":
         space = {"learning_rate": 3e-4, "batch_size": 64, "world_size": world_size}
     else:
         # Assuming we are using a cpu
-        space = {"learning_rate": 1e-4, "batch_size": 8, "world_size": world_size}
-    objective(space, timedelta(hours=1))
+        space = {"learning_rate": 1e-4, "batch_size": 4, "world_size": world_size}
+    objective(space, timedelta(hours=24))
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
