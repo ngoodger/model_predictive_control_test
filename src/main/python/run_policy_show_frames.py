@@ -1,5 +1,4 @@
 from random import random
-
 import block_sys as bs
 import numpy as np
 import torch
@@ -19,12 +18,13 @@ def run_policy_show_frames():
     model = torch.load("recurrent_model.pt", map_location=device)
     policy = torch.load("my_policy.pt", map_location=device)
     model_input_cnn = torch.load("input_cnn.pt", map_location=device)
+    out_array = np.zeros([bs.GRID_SIZE, bs.GRID_SIZE, 3])
     if USE_POLICY_SPECIFIC_INPUT_CNN:
         input_cnn = torch.load("policy_input_cnn.pt", map_location=device)
         model_input_cnn = torch.load("policy_input_cnn.pt", map_location=device)
     else:
         input_cnn = torch.load("input_cnn.pt", map_location=device)
-        model_input_cnn = input_cnn
+        model_input_cnn = torch.load("input_cnn.pt", map_location=device)
     force_0 = np.zeros([1, 2], dtype=np.float32)
     s0 = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, FRAMES], dtype=np.float32)
     s1_target = np.zeros([1, IMAGE_DEPTH, GRID_SIZE, GRID_SIZE, 4], dtype=np.float32)
@@ -42,20 +42,14 @@ def run_policy_show_frames():
     s1_target[0, 0, :, :, 1] = s1_target[0, 0, :, :, 0]
     s1_target[0, 0, :, :, 2] = s1_target[0, 0, :, :, 0]
     s1_target[0, 0, :, :, 3] = s1_target[0, 0, :, :, 0]
-    # Save frames to disk.
-    # Only 2 identical frames used as label so we can just save 1.
-    for i in range(1):
-        s1_frame = s1_target[0, :, :, :, i]
-        bs.render(s1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
     for i in range(TEST_STEPS):
         force_0_tensor = torch.from_numpy(force_0).to(device)
         start = torch.from_numpy(s0).to(device)
         target = torch.from_numpy(s1_target).to(device)
         out_target_cnn_flat = input_cnn.forward(target)
-        out_start_cnn_flat = input_cnn.forward(start)
-        out_start_cnn_flat_model = model_input_cnn.forward(start)
-        # batch_data = {"start": start, "target": target, "force_0": force_0_tensor}
         if i == 0:
+            out_start_cnn_flat_model = model_input_cnn.forward(start)
+            out_start_cnn_flat = input_cnn.forward(start)
             force_1_tensor, out_target_cnn_layer = policy.forward(
                 force_0_tensor,
                 out_start_cnn_flat,
@@ -63,8 +57,6 @@ def run_policy_show_frames():
                 None,
                 first_iteration=True,
             )
-            # DELETE THIS
-            # force_1_tensor = force_0_tensor
             logits, out, recurrent_state = model.forward(
                 out_start_cnn_flat_model,
                 None,
@@ -73,6 +65,8 @@ def run_policy_show_frames():
                 first_iteration=True,
             )
         else:
+            out_start_cnn_flat_model = model_input_cnn.forward(start)
+            out_start_cnn_flat = input_cnn.forward(start)
             force_1_tensor, _ = policy.forward(
                 force_0_tensor,
                 out_start_cnn_flat,
@@ -90,16 +84,6 @@ def run_policy_show_frames():
                 first_iteration=False,
             )
 
-        for i in range(FRAMES):
-            s0_frame = start[0, :, :, :, i].data.numpy()
-            # print(s0_batch.shape)
-            bs.render(s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-
-        for i in range(FRAMES):
-            out_frame = out[0, :, :, :, i].data.numpy()
-            # print(s0_batch.shape)
-            bs.render(out_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]))
-
         # Get new s0 based on policy force.
         force_1 = force_1_tensor.data.numpy()
         for i in range(FRAMES):
@@ -107,6 +91,13 @@ def run_policy_show_frames():
                 FORCE_SCALE * force_1[0, 0], FORCE_SCALE * force_1[0, 1]
             )
         force_0 = force_1
+
+        for i in range(FRAMES):
+            out_array = np.zeros([bs.GRID_SIZE, bs.GRID_SIZE, 3])
+            out_array[:, :, 2] = s1_target[0, 0, :, :, 0]
+            out_array[:, :, 1] = start[0, :, :, :, i].data.numpy()
+            out_array[:, :, 0] = out[0, :, :, :, i].data.numpy()
+            bs.render(out_array)
 
 
 if __name__ == "__main__":

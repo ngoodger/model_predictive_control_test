@@ -3,6 +3,7 @@ import block_sys as bs
 import torch
 from torch.utils.data import DataLoader
 from model import forward_sequence
+import numpy as np
 
 PRINT_SIM = True
 PRINT_MODEL = True
@@ -17,6 +18,7 @@ def run_model_show_frames():
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
     my_input_cnn = torch.load("input_cnn.pt", map_location="cpu")
     model = torch.load("recurrent_model.pt", map_location="cpu")
+    out_array = np.zeros([bs.GRID_SIZE, bs.GRID_SIZE, 3])
     for batch_idx, data in enumerate(dataloader):
         forces, observations = data
         batch_data = {
@@ -28,18 +30,12 @@ def run_model_show_frames():
         for seq_idx in range(SEQ_LEN - 1):
             if PRINT_SIM:
                 for i in range(4):
-                    s0_frame = observations[seq_idx + 1][0, :, :, :, i].data.numpy()
-                    bs.render(
-                        s0_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
-                        "_{}_{}".format(str(seq_idx), str(i) + "_target"),
-                    )
-            if PRINT_MODEL:
-                for i in range(bs.FRAMES):
-                    y1_frame = y1_list[seq_idx][0, :, :, :, i].data.numpy()
-                    bs.render(
-                        y1_frame.reshape([bs.GRID_SIZE, bs.GRID_SIZE]),
-                        "_{}_{}".format(str(seq_idx), str(i) + "_out"),
-                    )
+                    # s0_frame = observations[seq_idx + 1][0, :, :, :, i].data.numpy()
+                    out_array[:, :, 1] = observations[seq_idx + 1][
+                        0, :, :, :, i
+                    ].data.numpy()
+                    out_array[:, :, 0] = y1_list[seq_idx][0, :, :, :, i].data.numpy()
+                    bs.render(out_array, "_{}_{}".format(str(seq_idx), str(i) + "_out"))
 
 
 if __name__ == "__main__":
