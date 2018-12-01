@@ -56,7 +56,7 @@ class BaseTrainer(object):
         if (self.iteration % PRINT_LOSS_MEAN_INTERVAL) == 0:
             print("loss: {}".format(mean_loss))
             print("MODEL PARAM")
-            for param in self.policy.parameters():
+            for param in self.parameters:
                 print(param.shape)
                 print(torch.max(param.grad.data)[0])
                 # if param.shape == torch.Size([128, 4]):
