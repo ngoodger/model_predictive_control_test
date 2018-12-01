@@ -11,7 +11,7 @@ BLOCK_SIZE_HALF = int(round(BLOCK_SIZE / 2))
 BLOCK_MASS = 0.1
 FRICTION = 0.01
 TIMESTEP = 1e-3
-FORCE_SCALE = 200000.
+FORCE_SCALE = 100000.
 BATCH_SIZE = 64
 DEFAULT_RENDER_PORT = 8123
 FRAME_DIR = "frames"
@@ -155,8 +155,8 @@ if __name__ == "__main__":
 
 
 def render(grid, suffix=""):
-    grid255 = 255. * grid
+    grid255 = np.clip(255. * grid, 0., 255.)
     grid_uint = np.rint(grid255).astype("uint8")
-    im = Image.fromarray(grid_uint, mode="L")
+    im = Image.fromarray(grid_uint, mode="RGB").resize((640, 640))
     im.save(os.path.join(FRAME_DIR, "{}{}.jpeg".format(str(datetime.now()), suffix)))
     return im
