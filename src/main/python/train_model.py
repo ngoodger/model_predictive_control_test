@@ -79,7 +79,7 @@ def objective(space, time_limit=TRAINING_TIME):
             layer_2_kernel_size=3,
             layer_3_kernel_size=3,
             layer_4_kernel_size=3,
-        )
+        ).to(device)
 
     trainer = model.RecurrentModelTrainer(
         learning_rate=learning_rate,
