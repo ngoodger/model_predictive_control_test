@@ -96,7 +96,6 @@ class BlockSys:
             self.y = GRID_SIZE - BLOCK_SIZE_HALF
             self.vy = -self.vy
         self.y += self.vy * TIMESTEP
-        print(self.y)
         self._rasterize()
         return self._grid
 
