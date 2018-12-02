@@ -90,12 +90,13 @@ class BlockSys:
         self.vy += ((fy * TIMESTEP) / BLOCK_MASS) - self.vy * FRICTION
         # Bounce off wall
         if self.y < BLOCK_SIZE_HALF:
-            self.v = BLOCK_SIZE_HALF
+            self.y = BLOCK_SIZE_HALF
             self.vy = -self.vy
         if self.y > (GRID_SIZE - BLOCK_SIZE_HALF):
-            self.v = GRID_SIZE - BLOCK_SIZE_HALF
+            self.y = GRID_SIZE - BLOCK_SIZE_HALF
             self.vy = -self.vy
         self.y += self.vy * TIMESTEP
+        print(self.y)
         self._rasterize()
         return self._grid
 
