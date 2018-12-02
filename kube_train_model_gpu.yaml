@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-mpc-test-model-gpu-v22"
+  name: "pytorch-mpc-test-model-gpu-v23"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,7 +11,7 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:5a0a336954771a739bad2931a0bac523bbfa75fd
+          - image: gcr.io/proud-spring-222310/mpc_test:b3f0ccd117082160b3f4a8d0c0ddd99607e422dc
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
@@ -25,12 +25,12 @@ spec:
               limits:
                 nvidia.com/gpu: 1
           restartPolicy: OnFailure
-    - replicas: 3
+    - replicas: 1
       replicaType: WORKER
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:5a0a336954771a739bad2931a0bac523bbfa75fd
+          - image: gcr.io/proud-spring-222310/mpc_test:b3f0ccd117082160b3f4a8d0c0ddd99607e422dc
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
