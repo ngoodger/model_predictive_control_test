@@ -1,9 +1,9 @@
-import pygame, random
+import pygame
+import random
 import numpy as np
 from block_sys import FORCE_SCALE, FRAMES, IMAGE_DEPTH, GRID_SIZE
 import block_sys as bs
 import torch
-import time
 
 PIXELS = 640
 LEFT = 1
