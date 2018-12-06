@@ -22,6 +22,7 @@ color = (255, 128, 0)
 radius = 10
 device = "cpu"
 SCALE_ARR = np.ones((PIXELS_PER_BLOCK, PIXELS_PER_BLOCK, 1))
+block_screen = np.zeros((GRID_SIZE, GRID_SIZE, 3))
 
 my_block_sys = bs.BlockSys()
 my_block_sys_target = bs.BlockSys()
@@ -36,6 +37,12 @@ force_0[0, :] = np.array(
     [random.random() - 0.5, random.random() - 0.5], dtype=np.float32
 ).reshape([1, 2])
 
+target_temp = np.zeros((1, 1, GRID_SIZE, GRID_SIZE, FRAMES), dtype=np.float32)
+model_temp = np.zeros((1, 1, GRID_SIZE, GRID_SIZE, FRAMES), dtype=np.float32)
+model_screen = np.zeros((GRID_SIZE, GRID_SIZE, 3), dtype=np.uint8)
+frame = 0
+freeze = False
+
 try:
     while True:
         # time.sleep(0.05)
@@ -45,7 +52,7 @@ try:
         if e.type == pygame.MOUSEBUTTONDOWN:
             leftclick, middleclick, rightclick = pygame.mouse.get_pressed()
             if leftclick:
-                color = (255, 255, 255)
+                color = (0, 255, 0)
             else:
                 color = (0, 0, 0)
             x, y = e.pos
@@ -62,12 +69,18 @@ try:
                 ),
             )
             draw_on = True
+        if e.type == pygame.KEYDOWN:
+            if pygame.K_SPACE:
+                if freeze:
+                    freeze = False
+                else:
+                    freeze = True
         if e.type == pygame.MOUSEBUTTONUP:
             draw_on = False
         if e.type == pygame.MOUSEMOTION:
             leftclick, middleclick, rightclick = pygame.mouse.get_pressed()
             if leftclick:
-                color = (255, 255, 255)
+                color = (0, 255, 0)
             else:
                 color = (0, 0, 0)
             if draw_on:
@@ -87,21 +100,79 @@ try:
                 # roundline(screen, color, e.pos, last_pos,  radius)
             last_pos = e.pos
         pygame.display.flip()
-        # my_surface = pygame..get_surface()
-        a = pygame.surfarray.array3d(screen_draw)
+        target_screen = pygame.surfarray.array3d(screen_draw)
 
-        i = 0
-        s0[0, 0, :, :, i] = my_block_sys.step(
-            FORCE_SCALE * (force_0[0, 0]), FORCE_SCALE * (force_0[0, 1])
-        )
-        test = np.zeros((GRID_SIZE, GRID_SIZE, 3))
-        test[:, :, 0] = np.rint(255 * s0[0, 0, :, :, i])
-        test[:, :, 1] = np.rint(255 * s0[0, 0, :, :, i])
-        test[:, :, 2] = np.rint(255 * s0[0, 0, :, :, i])
-        block_img = np.kron(test, SCALE_ARR) + a
-
+        if not freeze:
+            s0[0, 0, :, :, frame] = my_block_sys.step(
+                FORCE_SCALE * (force_0[0, 0]), FORCE_SCALE * (force_0[0, 1])
+            )
+        model_screen[:, :, 0] = np.rint(model_temp[0, 0, :, :, frame])
+        model_img = np.kron(model_screen, SCALE_ARR)
+        block_screen[:, :, 0] = np.rint(0 * s0[0, 0, :, :, frame])
+        block_screen[:, :, 1] = np.rint(0 * s0[0, 0, :, :, frame])
+        block_screen[:, :, 2] = np.rint(255 * s0[0, 0, :, :, frame])
+        block_img = np.kron(block_screen, SCALE_ARR) + target_screen + model_img
         new_surf = pygame.pixelcopy.make_surface(block_img.astype(np.uint8))
         screen.blit(new_surf, (0, 0))
+        if not freeze:
+            if frame < FRAMES - 1:
+                frame += 1
+            else:
+                frame = 0
+                force_0_tensor = torch.from_numpy(force_0).to(device)
+                start = torch.from_numpy(s0).to(device)
+                target_temp[0, 0, :, :, 0] = (
+                    target_screen[1::PIXELS_PER_BLOCK, 1::PIXELS_PER_BLOCK, 1] / 255
+                )
+                target_temp[0, 0, :, :, 1] = target_temp[0, 0, :, :, 0]
+                target_temp[0, 0, :, :, 2] = target_temp[0, 0, :, :, 0]
+                target_temp[0, 0, :, :, 3] = target_temp[0, 0, :, :, 0]
+                s1_target = np.rint(target_temp)
+                target = torch.from_numpy(s1_target).to(device)
+                out_target_cnn_flat = input_cnn.forward(target)
+                if frame == 0:
+                    out_start_cnn_flat_model = model_input_cnn.forward(start)
+                    out_start_cnn_flat = input_cnn.forward(start)
+                    force_1_tensor, out_target_cnn_layer = policy.forward(
+                        force_0_tensor,
+                        out_start_cnn_flat,
+                        out_target_cnn_flat,
+                        None,
+                        first_iteration=True,
+                    )
+                    logits, out, recurrent_state = model.forward(
+                        out_start_cnn_flat_model,
+                        None,
+                        force_0_tensor,
+                        force_1_tensor,
+                        first_iteration=True,
+                    )
+                else:
+                    out_start_cnn_flat_model = model_input_cnn.forward(start)
+                    out_start_cnn_flat = input_cnn.forward(start)
+                    force_1_tensor, _ = policy.forward(
+                        force_0_tensor,
+                        out_start_cnn_flat,
+                        out_target_cnn_flat,
+                        out_target_cnn_layer=out_target_cnn_layer,
+                        first_iteration=False,
+                    )
+                    # DELETE THIS
+                    # force_1_tensor = force_0_tensor
+                    logits, out, recurrent_state = model.forward(
+                        out_start_cnn_flat_model,
+                        recurrent_state,
+                        force_0_tensor,
+                        force_1_tensor,
+                        first_iteration=False,
+                    )
+                force_1 = force_1_tensor.data.numpy()
+                force_0 = force_1
+                out_numpy = out.data.numpy()
+                model_temp[0, 0, :, :, 0] = out_numpy[0, 0, :, :, 0] * 255
+                model_temp[0, 0, :, :, 1] = out_numpy[0, 0, :, :, 1] * 255
+                model_temp[0, 0, :, :, 2] = out_numpy[0, 0, :, :, 2] * 255
+                model_temp[0, 0, :, :, 3] = out_numpy[0, 0, :, :, 3] * 255
 
 
 except StopIteration:
