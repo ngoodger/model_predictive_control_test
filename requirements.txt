@@ -5,3 +5,4 @@ tensorboard
 tensorboardx
 google-api-python-client
 google-cloud-storage
+pygame
