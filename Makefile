@@ -31,6 +31,9 @@ run_model_show_frames:
 run_policy_show_frames:
 	python3 src/main/python/run_policy_show_frames.py
 
+draw_test_policy:
+	python3 src/main/python/draw_test_v2.py
+
 build_image:
 	docker build . -t mpc_test:$(VERSION)
 
