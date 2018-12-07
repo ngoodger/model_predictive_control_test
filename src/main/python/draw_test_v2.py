@@ -39,26 +39,33 @@ force_0[0, :] = np.array(
 
 target_temp = np.zeros((1, 1, GRID_SIZE, GRID_SIZE, FRAMES), dtype=np.float32)
 model_temp = np.zeros((1, 1, GRID_SIZE, GRID_SIZE, FRAMES), dtype=np.float32)
+model_temp_last = np.zeros((1, 1, GRID_SIZE, GRID_SIZE, FRAMES), dtype=np.float32)
 model_screen = np.zeros((GRID_SIZE, GRID_SIZE, 3), dtype=np.uint8)
 frame = 0
 freeze = False
 
+print("")
 print("-------------What am I seeing?-------------")
 print("Green block: Block location in simulated world")
 print("Red block / cloud: Model predicted location")
 print("Drawn Blue square: Target image drawing")
+print("")
 print("-------------What's happening?-------------")
 print(
-    "Policy is running that has learnt to make the current image look like the target image"
+    "Policy is running that has learnt to make the current image look\n"
+    " like the target image"
 )
 print(
-    "Model prediction is shown in red however it is not used for anything just shown for fun."
+    "Model prediction 4 frames ahead of block is shown in red however\n"
+    " it was only used for training not here and is just shown for fun."
 )
 
+print("")
 print("-------------Controls-------------")
 print("Space bar: Toggle start stop physics")
 print("Left mouse button: Draw target image")
 print("Right mouse button: Erase target image")
+print("")
 
 try:
     while True:
@@ -120,18 +127,10 @@ try:
         target_screen = pygame.surfarray.array3d(screen_draw)
 
         if not freeze:
+            model_temp_last = model_temp
             s0[0, 0, :, :, frame] = my_block_sys.step(
                 FORCE_SCALE * (force_0[0, 0]), FORCE_SCALE * (force_0[0, 1])
             )
-        model_screen[:, :, 0] = np.rint(model_temp[0, 0, :, :, frame])
-        model_img = np.kron(model_screen, SCALE_ARR)
-        block_screen[:, :, 0] = np.rint(0 * s0[0, 0, :, :, frame])
-        block_screen[:, :, 1] = np.rint(0 * s0[0, 0, :, :, frame])
-        block_screen[:, :, 2] = np.rint(255 * s0[0, 0, :, :, frame])
-        block_img = np.kron(block_screen, SCALE_ARR) + target_screen + model_img
-        new_surf = pygame.pixelcopy.make_surface(block_img.astype(np.uint8))
-        screen.blit(new_surf, (0, 0))
-        if not freeze:
             if frame < FRAMES - 1:
                 frame += 1
             else:
@@ -190,6 +189,16 @@ try:
                 model_temp[0, 0, :, :, 1] = out_numpy[0, 0, :, :, 1] * 255
                 model_temp[0, 0, :, :, 2] = out_numpy[0, 0, :, :, 2] * 255
                 model_temp[0, 0, :, :, 3] = out_numpy[0, 0, :, :, 3] * 255
+
+        model_screen[:, :, 0] = np.rint(model_temp_last[0, 0, :, :, frame])
+        model_img = np.kron(model_screen, SCALE_ARR)
+        block_screen[:, :, 0] = np.rint(0 * s0[0, 0, :, :, frame])
+        block_screen[:, :, 1] = np.rint(0 * s0[0, 0, :, :, frame])
+        block_screen[:, :, 2] = np.rint(255 * s0[0, 0, :, :, frame])
+        block_img = np.kron(block_screen, SCALE_ARR) + target_screen + model_img
+        new_surf = pygame.pixelcopy.make_surface(block_img.astype(np.uint8))
+        screen.blit(new_surf, (0, 0))
+        block_screen_last = block_screen
 
 
 except StopIteration:
