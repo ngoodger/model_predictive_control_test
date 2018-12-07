@@ -43,6 +43,23 @@ model_screen = np.zeros((GRID_SIZE, GRID_SIZE, 3), dtype=np.uint8)
 frame = 0
 freeze = False
 
+print("-------------What am I seeing?-------------")
+print("Green block: Block location in simulated world")
+print("Red block / cloud: Model predicted location")
+print("Drawn Blue square: Target image drawing")
+print("-------------What's happening?-------------")
+print(
+    "Policy is running that has learnt to make the current image look like the target image"
+)
+print(
+    "Model prediction is shown in red however it is not used for anything just shown for fun."
+)
+
+print("-------------Controls-------------")
+print("Space bar: Toggle start stop physics")
+print("Left mouse button: Draw target image")
+print("Right mouse button: Erase target image")
+
 try:
     while True:
         # time.sleep(0.05)
