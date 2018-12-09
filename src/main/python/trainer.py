@@ -58,7 +58,7 @@ class BaseTrainer(object):
             print("MODEL PARAM")
             for param in self.parameters:
                 print(param.shape)
-                print(torch.max(param.grad.data)[0])
+                print(torch.max(param.grad.data))
                 # if param.shape == torch.Size([128, 4]):
                 #    print(param.grad.data)
         # Only average gradients across workers if there is more than 1.
