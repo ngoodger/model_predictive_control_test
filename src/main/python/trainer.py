@@ -34,8 +34,9 @@ class BaseTrainer(object):
         pass
 
     def average_gradients(self):
+        group = dist.new_group([0])
         for param in self.parameters:
-            dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM, group=0)
+            dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM, group=group)
             param.grad.data /= self.world_size
 
     def train(self, batch_data):
