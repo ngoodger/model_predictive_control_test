@@ -25,7 +25,7 @@ TRAINING_TIME = timedelta(minutes=20)
 INPUT_CNN_PATH = "input_cnn.pt"
 MODEL_PATH = "recurrent_model.pt"
 MODEL_METADATA_PATH = "recurrent_model_metadata.json"
-SEQ_LEN = 4
+SEQ_LEN = 12
 SAVE_INTERVAL = 1000
 PRINT_INTERVAL = 100
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-5, "batch_size": 4, "world_size": world_size}
-    objective(space, timedelta(hours=2))
+    objective(space, timedelta(hours=12))
     # model = torch.load('my_model.pt')
 
     # .. to load your previously training model:
