@@ -25,7 +25,7 @@ TRAINING_TIME = timedelta(minutes=20)
 INPUT_CNN_PATH = "input_cnn.pt"
 MODEL_PATH = "recurrent_model.pt"
 MODEL_METADATA_PATH = "recurrent_model_metadata.json"
-SEQ_LEN = 12
+SEQ_LEN = 6
 SAVE_INTERVAL = 1000
 PRINT_INTERVAL = 100
 
