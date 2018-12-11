@@ -3,7 +3,7 @@ import trainer
 from block_sys import GRID_SIZE
 from torch import nn
 
-TARGET_HORIZON = 3
+TARGET_HORIZON = 6
 STRIDE = 2
 OUTPUT_GAIN = 0.5
 PRINT_OUTPUT = False
