@@ -150,7 +150,7 @@ if __name__ == "__main__":
             dist.init_process_group("tcp")
     if torch.cuda.is_available():
         # Assuming we are using a gpu
-        space = {"learning_rate": 1e-4, "batch_size": 128, "world_size": world_size}
+        space = {"learning_rate": 1e-4, "batch_size": 64, "world_size": world_size}
     else:
         # Assuming we are using a cpu
         space = {"learning_rate": 1e-5, "batch_size": 4, "world_size": world_size}
