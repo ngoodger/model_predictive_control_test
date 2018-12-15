@@ -4,20 +4,10 @@ export MPC_IMAGE := gcr.io\/$(GKE_PROJECT)\/model_predictive_control_test:$(VERS
 export KUBE_YAML_IMAGE_INDENT := \ \ \ \ \ \ \ \ \ \ 
 
 install:
-	cp scripts/pre-commit .git/hooks/
+	mkdir frames
 
 clean:
 	rm frames/*
-
-format:
-	ABSOLUTE_PROJECT_SRC_DIR="${PWD}/src/main/python ${PWD}/src/test/python" \
-    source scripts/define_python_format_function.sh && \
-    format_python
-
-format_check:
-	ABSOLUTE_PROJECT_SRC_DIR="${PWD}/src/main/python ${PWD}/src/test/python" \
-    source scripts/define_python_format_function.sh && \
-    format_python_check
 
 train_model:
 	python3 src/main/python/train_model.py
