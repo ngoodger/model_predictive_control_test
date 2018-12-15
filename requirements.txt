@@ -1,8 +1,5 @@
-torch
-torchvision
-tensorflow
-tensorboard
-tensorboardx
-google-api-python-client
-google-cloud-storage
-pygame
+torch==1.0.0
+torchvision==0.2.1
+google-api-python-client==1.7.4
+google-cloud-storage==1.13.0
+pygame==1.9.4
