@@ -1,6 +1,6 @@
 export VERSION := $(shell git rev-parse HEAD)
 export GKE_PROJECT := $(shell cat GKE_PROJECT)
-export MPC_IMAGE := gcr.io\/$(GKE_PROJECT)\/mpc_test:$(VERSION)
+export MPC_IMAGE := gcr.io\/$(GKE_PROJECT)\/model_predictive_control_test:$(VERSION)
 export KUBE_YAML_IMAGE_INDENT := \ \ \ \ \ \ \ \ \ \ 
 
 install:
@@ -35,7 +35,7 @@ draw_test_policy:
 	python3 src/main/python/draw_test_v2.py
 
 build_image:
-	docker build . -t mpc_test:$(VERSION)
+	docker build . -t model_predictive_control_test:$(VERSION)
 
 update_deployment_version:
 	cat kube_train_model_gpu.yaml | sed 's/^.*- image:.*$$/$(KUBE_YAML_IMAGE_INDENT)- image: $(MPC_IMAGE)/' > kube_train_model_gpu.yaml.bak
@@ -48,5 +48,5 @@ update_deployment_version:
 	mv kube_train_policy_cpu.yaml.bak kube_train_policy_cpu.yaml
 
 push_image_gke: build_image update_deployment_version
-	docker tag mpc_test:$(VERSION) gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)
-	docker push gcr.io/$(GKE_PROJECT)/mpc_test:$(VERSION)
+	docker tag model_predictive_control_test:$(VERSION) gcr.io/$(GKE_PROJECT)/model_predictive_control_test:$(VERSION)
+	docker push gcr.io/$(GKE_PROJECT)/model_predictive_control_test:$(VERSION)

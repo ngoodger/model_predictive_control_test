@@ -1,7 +1,7 @@
 apiVersion: "kubeflow.org/v1alpha1"
 kind: "PyTorchJob"
 metadata:
-  name: "pytorch-mpc-test-model-cpu-v14"
+  name: "pytorch-model_predictive_control-test-model-cpu-v14"
 spec:
   backend: "tcp"
   masterPort: "23456"
@@ -11,12 +11,12 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:1351a3dadf711d304834a8c90a11688c77a97989
+          - image: gcr.io/proud-spring-222310/model_predictive_control_test:1351a3dadf711d304834a8c90a11688c77a97989
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
             - name: GCS_BUCKET 
-              value: "mpc-test"
+              value: "model-predictive-control-test"
             imagePullPolicy: Always 
             useHostIPC: true
             name: pytorch
@@ -30,12 +30,12 @@ spec:
       template:
         spec:
           containers:
-          - image: gcr.io/proud-spring-222310/mpc_test:1351a3dadf711d304834a8c90a11688c77a97989
+          - image: gcr.io/proud-spring-222310/model_predictive_control_test:1351a3dadf711d304834a8c90a11688c77a97989
             env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "gs_key.json"
             - name: GCS_BUCKET 
-              value: "mpc-test"
+              value: "model-predictive-control-test"
             imagePullPolicy: Always 
             useHostIPC: true
             name: pytorch
