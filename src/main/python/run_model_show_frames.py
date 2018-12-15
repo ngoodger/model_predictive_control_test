@@ -14,7 +14,7 @@ def run_model_show_frames():
     TEST_EXAMPLES = 1
 
     # Use cpu for inference.
-    SEED = 2
+    SEED = 0
     samples_dataset = block_dataset.ModelDataSet(TEST_EXAMPLES, SEQ_LEN, SEED)
     dataloader = DataLoader(samples_dataset, batch_size=1, shuffle=False, num_workers=0)
     my_input_cnn = torch.load("input_cnn.pt", map_location="cpu")
