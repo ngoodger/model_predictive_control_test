@@ -5,6 +5,7 @@ export KUBE_YAML_IMAGE_INDENT := \ \ \ \ \ \ \ \ \ \
 
 install:
 	mkdir frames
+	pip3 install -r requirements.txt
 
 clean:
 	rm frames/*
