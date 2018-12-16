@@ -158,5 +158,5 @@ def render(grid, suffix=""):
     grid255 = np.clip(255. * grid, 0., 255.)
     grid_uint = np.rint(grid255).astype("uint8")
     im = Image.fromarray(grid_uint, mode="RGB").resize((640, 640))
-    im.save(os.path.join(FRAME_DIR, "{}{}.jpeg".format(str(datetime.now()), suffix)))
+    im.save(os.path.join(FRAME_DIR, "{}.jpeg".format(suffix)))
     return im
