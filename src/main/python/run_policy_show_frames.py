@@ -86,18 +86,18 @@ def run_policy_show_frames():
 
         # Get new s0 based on policy force.
         force_1 = force_1_tensor.data.numpy()
-        for i in range(FRAMES):
-            s0[0, 0, :, :, i] = my_block_sys.step(
+        for j in range(FRAMES):
+            s0[0, 0, :, :, j] = my_block_sys.step(
                 FORCE_SCALE * force_1[0, 0], FORCE_SCALE * force_1[0, 1]
             )
         force_0 = force_1
 
-        for i in range(FRAMES):
+        for j in range(FRAMES):
             out_array = np.zeros([bs.GRID_SIZE, bs.GRID_SIZE, 3])
             out_array[:, :, 2] = s1_target[0, 0, :, :, 0]
-            out_array[:, :, 1] = start[0, :, :, :, i].data.numpy()
-            out_array[:, :, 0] = out[0, :, :, :, i].data.numpy()
-            bs.render(out_array)
+            out_array[:, :, 1] = start[0, :, :, :, j].data.numpy()
+            out_array[:, :, 0] = out[0, :, :, :, j].data.numpy()
+            bs.render(out_array, "e" + str(i))
 
 
 if __name__ == "__main__":
