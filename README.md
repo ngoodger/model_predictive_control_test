@@ -1,5 +1,23 @@
 # Description 
-Pytorch project for testing model based reinforcement learning.
+Pytorch project as an experiment in model based reinforcement learning.
+
+This isn't however model based reinforcement learning in the strictest sense as the process is effectively:
+1.  Train model via random inputs and initial conditions in the world.
+2.  Train policy back propogating through model using random initial conditions and random targets.
+
+So it is effectively just supervised learning with a simulator.
+The component I was curious about testing was whether I could train a policy by backpropogating through a complex model.
+The answer seems to be yes although to be fair the learned policy is only simple and it doesn't have to plan over a long horizon.
+
+I built a simple physics simulator in numpy.  It contains a block moving in a fixed square space where the velocity reverses on impact with a wall (bounce).  Forces can be applied at each time step.
+So essentially the block can be moved to a target location by applying the right forces to guide it there.
+
+The model operates on sets of 4 frames rather than each frame so each timestep is considered as 4 frames.
+If we consider t0 to be the first 4 frames and t1 to be the next 4 frames the aim of model is to predict the next 4 frames at t1.
+
+Similarly the forces at are held constant for each 4 frame timestep.
+
+
 ![](images/Model.svg)
 ![](images/Policy.svg)
 ![](gif/model.gif)
