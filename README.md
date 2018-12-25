@@ -1,5 +1,7 @@
 # Description 
 Pytorch project for testing model based reinforcement learning.
+![](images/Model.svg)
+![](images/Policy.svg)
 ![](gif/model.gif)
 ![](gif/policy.gif)
 Primarily trained on Google Kubernetes Engine on GPUs however it can
