@@ -43,6 +43,7 @@ def run_policy_show_frames():
     s1_target[0, 0, :, :, 2] = s1_target[0, 0, :, :, 0]
     s1_target[0, 0, :, :, 3] = s1_target[0, 0, :, :, 0]
     for i in range(TEST_STEPS):
+        print(force_0)
         force_0_tensor = torch.from_numpy(force_0).to(device)
         start = torch.from_numpy(s0).to(device)
         target = torch.from_numpy(s1_target).to(device)
@@ -97,7 +98,7 @@ def run_policy_show_frames():
             out_array[:, :, 2] = s1_target[0, 0, :, :, 0]
             out_array[:, :, 1] = start[0, :, :, :, j].data.numpy()
             out_array[:, :, 0] = out[0, :, :, :, j].data.numpy()
-            bs.render(out_array, "e" + str(i))
+            bs.render(out_array, "e" + str(j + i*FRAMES))
 
 
 if __name__ == "__main__":
