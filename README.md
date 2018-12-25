@@ -21,7 +21,6 @@ Similarly the forces at are held constant for each 4 frame timestep.
 ![](images/Model.svg)
 ![](images/Policy.svg)
 ![](gif/model.gif)
-![](gif/policy.gif)
 Primarily trained on Google Kubernetes Engine on GPUs however it can
 also be trained locally on cpu.
 Pre-trained models included with the project.
