@@ -1,21 +1,22 @@
 # Description 
 Pytorch project as an experiment in model based reinforcement learning.
 
-This isn't however model based reinforcement learning in the strictest sense as the process is effectively:
+This isn't however model based reinforcement learning in the strictest sense as the process for training a policy was:
 1.  Train model via random inputs and initial conditions in the world.
 2.  Train policy back propogating through model using random initial conditions and random targets.
 
 So it is effectively just supervised learning with a simulator.
-The component I was curious about testing was whether I could train a policy by backpropogating through a complex model.
-The answer seems to be yes although to be fair the learned policy is only simple and it doesn't have to plan over a long horizon.
+The component I was curious about testing was whether I could train a policy by backpropogating through a complex model.The answer seems to be yes although to be fair the learned policy is only simple and it doesn't have to plan over a long horizon.
 
 I built a simple physics simulator in numpy.  It contains a block moving in a fixed square space where the velocity reverses on impact with a wall (bounce).  Forces can be applied at each time step.
 So essentially the block can be moved to a target location by applying the right forces to guide it there.
 
-The model operates on sets of 4 frames rather than each frame so each timestep is considered as 4 frames.
+The model operates on sets of 4 frames rather than each frame so each timestep is considered as 4 frames.  The justification here then is the frames makeup a Markov state and time only needs to be considered in the context of planning.
 If we consider t0 to be the first 4 frames and t1 to be the next 4 frames the aim of model is to predict the next 4 frames at t1.
 
-Similarly the forces at are held constant for each 4 frame timestep.
+Similarly the forces at are held constant for each 4 frame timestep.  The model is given the forces for t0 and t1 however it probably only really needs the forces for t1 since the forces for t0 could be derived from the t0 frames.
+
+The most interesting part of the model is the Recurrent layer.  The thinking behind this is that while 4 frames capture the state nicely it will not always be possible to reach the target in 1 timestep since the force is limited and the velocity may be initialized to move away from the target.  So the model needs to "plan" or there will be no gradient for the policy to follow in order to move the block to the target.  The recurrent model
 
 
 ![](images/Model.svg)
