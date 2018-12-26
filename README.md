@@ -1,8 +1,8 @@
 # Description 
 Pytorch project as an experiment in model based reinforcement learning.
 
-![Model](gif/model.gif)
-![Policy](gif/policy.gif)
+![Model](gif/model.gif?style=centerme)
+![Policy](gif/policy.gif?style=centerme)
 
 This isn't however model based reinforcement learning in the strictest sense as the process for training a policy was:
 1.  Train model via random inputs and initial conditions in the world.
