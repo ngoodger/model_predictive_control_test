@@ -21,7 +21,7 @@ This isn't however model based reinforcement learning in the strictest sense as 
 2.  Train policy back propogating through model using random initial conditions and random targets.
 
 So it is effectively just supervised learning with a simulator.
-The component I was curious about testing was whether I could train a policy by backpropogating through a complex model.The answer seems to be yes although to be fair the learned policy is only simple and it doesn't have to plan over a long horizon.
+The component of most interest was whether a policy could be trained by backpropogating through a complex model.  The answer seems to be yes although to be fair the learned policy is only simple and it doesn't have to plan over a long horizon.
 
 I built a simple physics simulator in numpy.  It contains a block moving in a fixed square space where the velocity reverses on impact with a wall (bounce).  Forces can be applied at each time step.
 So essentially the block can be moved to a target location by applying the right forces to guide it there.
