@@ -6,10 +6,12 @@ Pytorch project as an experiment in model based reinforcement learning.
   <img src="gif/model.gif?style=centerme">
   <figcaption>Model Example</figcaption>
   </figure>
-  <br>
+</p>
+<p align="center">
   <figure>
   <img src="gif/policy.gif?style=centerme">
   <figcaption>Policy Example</figcaption>
+  </figure>
 </p>
 
 This isn't however model based reinforcement learning in the strictest sense as the process for training a policy was:
