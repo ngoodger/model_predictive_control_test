@@ -7,16 +7,14 @@ Pytorch project as an experiment in model based reinforcement learning.
   <figcaption>Model Example</figcaption>
   </figure>
 </p>
-  
-  
-  
+<br><br>
 <p align="center">
   <figure>
   <img src="gif/policy.gif?style=centerme">
   <figcaption>Policy Example</figcaption>
   </figure>
 </p>
-
+<br><br>
 # Description 
 This isn't however model based reinforcement learning in the strictest sense as the process for training a policy was:
 1.  Train model via random inputs and initial conditions in the world.
@@ -41,15 +39,14 @@ The most interesting part of the model is the Recurrent layer.  The thinking beh
   <figcaption>Model Architecture</figcaption>
   </figure>
 </p>
-  
-  
-  
+<br><br>
 <p align="center">
   <figure>
   <img src="images/Policy.svg">
   <figcaption>Policy Architecture</figcaption>
   </figure>
 </p>
+<br><br>
 Primarily trained on Google Kubernetes Engine on GPUs however it can
 also be trained locally on cpu.
 Pre-trained models included with the project.
