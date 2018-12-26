@@ -2,7 +2,10 @@
 Pytorch project as an experiment in model based reinforcement learning.
 
 <p align="center">
+  <figure>
   <img src="gif/model.gif?style=centerme">
+  <figcaption>"Model"</figcaption>
+  </figure>
   <img src="gif/policy.gif?style=centerme">
 </p>
 
