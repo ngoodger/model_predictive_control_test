@@ -47,8 +47,6 @@ The most interesting part of the model is the Recurrent layer.  The thinking beh
   <img src="images/Policy.svg">
   </figure>
 </p>
-Primarily trained on Google Kubernetes Engine on GPUs however it can
-also be trained locally on cpu.
 Pre-trained models included with the project.
 
 # Local Installation for testing
