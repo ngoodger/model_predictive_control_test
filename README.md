@@ -91,3 +91,8 @@ To train the policy run:
 `bash start_policy.sh`
 
 # Training on GKE 
+1. Run: `bash setup_nodepool_gpu.sh` or `bash setup_nodepool_cpu.sh` to train on gpu (strongly recommended due to 30x performance increase) or cpu respectively.
+2. Run: `make push_image_gke` to push the image and push to google docker registry.  It uses the git commit as the
+version and updates the kubernetes yaml jobs accordingly.
+3. Run: `kubectl create -f kube_train_model_<DEVICE>.yaml` or `kubectl create -f kube_train_policy_<DEVICE>.yaml` to train the model or policy respectively where DEVICE=gpu or cpu.
+4. Once training is done run `bash cleanup_nodepool.sh` to decommission the nodes to avoid paying for them any longer than necessary. 
