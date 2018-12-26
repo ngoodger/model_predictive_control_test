@@ -1,4 +1,4 @@
-# Description 
+# Overview
 Pytorch project as an experiment in model based reinforcement learning.
 
 <p align="center">
@@ -17,6 +17,7 @@ Pytorch project as an experiment in model based reinforcement learning.
   </figure>
 </p>
 
+# Description 
 This isn't however model based reinforcement learning in the strictest sense as the process for training a policy was:
 1.  Train model via random inputs and initial conditions in the world.
 2.  Train policy back propogating through model using random initial conditions and random targets.
@@ -34,9 +35,21 @@ Similarly the forces at are held constant for each timestep of 4 frames.  The mo
 
 The most interesting part of the model is the Recurrent layer.  The thinking behind this is that while 4 frames capture the state nicely it will not always be possible to reach the target in 1 timestep.  The force is limited and the velocity may be initialized to move away from the target.  So the model needs to "plan" or there will be no gradient for the policy to follow in order to move the block to the target. Due to the number of layers involved just for convolution and deconvolution an LSTM model was used since when looking into the future and backpropogating into the policy the gradients will have to flow through many layers even though there aren't necessarily many long term dependencies in this model. 
 
+<p align="center">
+  <figure>
+  <img src="images/Model.svg">
+  <figcaption>Model Architecture</figcaption>
+  </figure>
+</p>
 
-![](images/Model.svg)
-![](images/Policy.svg)
+
+
+<p align="center">
+  <figure>
+  <img src="images/Policy.svg">
+  <figcaption>Policy Architecture</figcaption>
+  </figure>
+</p>
 Primarily trained on Google Kubernetes Engine on GPUs however it can
 also be trained locally on cpu.
 Pre-trained models included with the project.
