@@ -1,7 +1,6 @@
 # Overview
 Pytorch project as an experiment in model based reinforcement learning.
 
-#
 <p align="center">
   <figure>
   <img src="gif/model.gif?style=centerme">
@@ -34,7 +33,6 @@ Similarly the forces at are held constant for each timestep of 4 frames.  The mo
 
 The most interesting part of the model is the Recurrent layer.  The thinking behind this is that while 4 frames capture the state nicely it will not always be possible to reach the target in 1 timestep.  The force is limited and the velocity may be initialized to move away from the target.  So the model needs to "plan" or there will be no gradient for the policy to follow in order to move the block to the target. Due to the number of layers involved just for convolution and deconvolution an LSTM model was used since when looking into the future and backpropogating into the policy the gradients will have to flow through many layers even though there aren't necessarily many long term dependencies in this model. 
 
-#
 <p align="center">
   <figure>
   <img src="images/Model.svg">
