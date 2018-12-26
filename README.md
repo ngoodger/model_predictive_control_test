@@ -7,9 +7,9 @@ Pytorch project as an experiment in model based reinforcement learning.
   <figcaption>Model Example</figcaption>
   </figure>
 </p>
-
-
-
+  
+  
+  
 <p align="center">
   <figure>
   <img src="gif/policy.gif?style=centerme">
@@ -41,9 +41,9 @@ The most interesting part of the model is the Recurrent layer.  The thinking beh
   <figcaption>Model Architecture</figcaption>
   </figure>
 </p>
-
-
-
+  
+  
+  
 <p align="center">
   <figure>
   <img src="images/Policy.svg">
